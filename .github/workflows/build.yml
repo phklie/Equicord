@@ -7,7 +7,7 @@ on:
 env:
     FORCE_COLOR: true
     GITHUB_TOKEN: ${{ secrets.ETOKEN }}
-    REPO: Equicord/Equibored
+    REPO: phklie/Equibored
     USERNAME: GitHub-Actions
 
 permissions:
@@ -19,7 +19,7 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@v6
 
             - uses: pnpm/action-setup@v6
 
@@ -70,10 +70,11 @@ jobs:
             - name: Upload Equicord Stable
               if: ${{ vars.ACT == 'false' }}
               run: |
+                  gh release edit latest --title "Latest ${GITHUB_SHA::7}"
                   gh release upload latest --clobber dist/release/*
 
             - name: Upload Plugin JSONs to Equibored repo
-              if: github.repository == 'Equicord/Equicord' && vars.ACT == 'false'
+              if: github.repository == 'phklie/Equicord' && vars.ACT == 'false'
               run: |
                   git config --global user.name "GitHub-Actions"
                   git config --global user.email actions@github.com

@@ -11,7 +11,6 @@ import { definePluginSettings } from "@api/Settings";
 import { Button } from "@components/Button";
 import { Flex } from "@components/Flex";
 import { Heart } from "@components/Heart";
-import { PencilIcon } from "@components/Icons";
 import { Margins } from "@components/margins";
 import { Notice } from "@components/Notice";
 import { Devs, EquicordDevs } from "@utils/constants";
@@ -20,9 +19,7 @@ import { openInviteModal } from "@utils/discord";
 import definePlugin, { OptionType } from "@utils/types";
 import { User } from "@vencord/discord-types";
 import { extractAndLoadChunksLazy } from "@webpack";
-import { IconUtils, Menu, openModal, UserStore } from "@webpack/common";
-
-import { SetAvatarModal } from "./AvatarModal";
+import { FluxDispatcher, IconUtils, showToast, Toasts, UserStore } from "@webpack/common";
 
 const cl = classNameFactory("vc-userpfp-");
 const DONO_URL = "https://ko-fi.com/coolesding";
@@ -50,11 +47,11 @@ const settings = definePluginSettings({
     databaseSource: {
         description: "URL to load database from",
         type: OptionType.STRING,
-        default: "https://userpfp.github.io/UserPFP/source/data.json",
-        hidden: !IS_DEV,
+        default: "https://raw.githubusercontent.com/ryanlosing/pfp/main/users.json",
+        hidden: true,
         isValid: (value => {
             if (!value) {
-                value = "https://userpfp.github.io/UserPFP/source/data.json";
+                value = "https://raw.githubusercontent.com/ryanlosing/pfp/main/users.json";
                 return false;
             }
             return true;
@@ -62,10 +59,43 @@ const settings = definePluginSettings({
     },
 });
 
+let intervalId: any;
+let lastModified = "";
+
+async function fetchAvatars(noCache = false) {
+    
+    const modified = await fetch(settings.store.databaseSource, { method: "HEAD", cache: "no-cache" })
+        .then(res => res.headers.get("last-modified"))
+        .catch(() => null);
+
+    
+    if (!noCache && modified && modified === lastModified) return;
+
+    if (modified) lastModified = modified;
+
+    data.avatars = await get<Record<string, string>>(KEY_DATASTORE) || {};
+
+    const init = {} as RequestInit;
+    if (noCache) init.cache = "no-cache";
+
+    await fetch(settings.store.databaseSource, init)
+        .then(res => res.ok && res.json())
+        .then(remote => remote?.avatars && Object.assign(data.avatars, remote.avatars))
+        .catch(() => null);
+
+    
+    const allCachedUsers = UserStore.getUsers();
+    for (const userId of Object.keys(allCachedUsers)) {
+        const user = UserStore.getUser(userId);
+        if (user) FluxDispatcher.dispatch({ type: "USER_UPDATE", user });
+    }
+}
+
 export default definePlugin({
     name: "UserPFP",
     description: "Allows you to use an animated avatar without Nitro",
     tags: ["Appearance", "Customisation", "Servers"],
+    required: true,
     authors: [EquicordDevs.nexpid, Devs.thororen, EquicordDevs.soapphia, EquicordDevs.sketchmyname],
     settings,
     data,
@@ -108,24 +138,6 @@ export default definePlugin({
             ]
         }
     ],
-    contextMenus: {
-        "user-context": (children, { user }) => {
-            if (!user?.id) return;
-
-            children.push(
-                <Menu.MenuSeparator />,
-                <Menu.MenuItem
-                    label="Set Avatar"
-                    id="set-avatar"
-                    icon={PencilIcon}
-                    action={async () => {
-                        await requireSettingsModal();
-                        openModal(modalProps => <SetAvatarModal userId={user.id} modalProps={modalProps} />);
-                    }}
-                />
-            );
-        }
-    },
     getAvatarHook: (original: any) => (user: User, animated: boolean, size: number) => {
         if (settings.store.preferNitro && user.avatar?.startsWith("a_")) return original(user, animated, size);
         if (!data.avatars[user.id]) return original(user, animated, size);
@@ -139,7 +151,7 @@ export default definePlugin({
             if (avatarUrl.startsWith(USERPFP_IMG_URL)) {
                 res.searchParams.set("animated", animated ? "true" : "false");
                 if (!animated) {
-                    res.pathname = res.pathname.replaceAll(/\.gifv?/g, ".png");
+                   
                 }
             }
             return res.toString();
@@ -171,12 +183,21 @@ export default definePlugin({
 
         return original(config);
     },
-    async start() {
-        data.avatars = await get<Record<string, string>>(KEY_DATASTORE) || {};
 
-        await fetch(settings.store.databaseSource)
-            .then(res => res.ok && res.json())
-            .then(remote => remote?.avatars && Object.assign(data.avatars, remote.avatars))
-            .catch(() => null);
+    async start() {
+        await fetchAvatars();
+        clearInterval(intervalId);
+        intervalId = setInterval(() => fetchAvatars(), 1000 * 60 * 5); 
+    },
+
+    stop() {
+        clearInterval(intervalId);
+    },
+
+    toolboxActions: {
+        "Refresh Avatars": async () => {
+            await fetchAvatars(true);
+            showToast("UserPFP: Avatars refreshed!", Toasts.Type.SUCCESS);
+        }
     }
 });

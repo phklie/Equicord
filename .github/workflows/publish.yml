@@ -3,53 +3,43 @@ on:
     push:
         branches:
             - main
-
+    workflow_dispatch: {}
 env:
     FORCE_COLOR: true
-
 permissions:
     contents: write
-
 jobs:
     release:
         runs-on: ubuntu-latest
-
         steps:
             - uses: actions/checkout@v7
               with:
                   fetch-depth: 0
-
             - name: Get package.json version
               id: pkg
               run: echo "version=v$(jq -r .version < package.json)" >> $GITHUB_OUTPUT
-
             - name: Get latest Git tag
               id: tag
               run: |
                   latest_tag=$(git tag --list 'v*' --sort=-v:refname | head -n 1 || echo "v0.0.0")
                   echo "latest=$latest_tag" >> $GITHUB_OUTPUT
-
             - name: Check if package.json version is newer
               id: check
               run: |
                   pkg="${{ steps.pkg.outputs.version }}"
                   latest="${{ steps.tag.outputs.latest }}"
-
                   echo "Latest tag: $latest"
                   echo "Package version: $pkg"
-
                   if [ "$pkg" != "$latest" ] && [ "$(sort -V <<<"$latest"$'\n'"$pkg" | tail -n1)" = "$pkg" ]; then
                     echo "release=true" >> $GITHUB_OUTPUT
                   else
                     echo "release=false" >> $GITHUB_OUTPUT
                   fi
-
             - name: Stop if not newer
               if: steps.check.outputs.release == 'false'
               run: |
                   echo "No new version to release (package.json ${{ steps.pkg.outputs.version }} <= latest tag ${{ steps.tag.outputs.latest }})"
                   exit 0
-
             - name: Create Tag
               if: steps.check.outputs.release == 'true'
               uses: butlerlogic/action-autotag@1.1.2
@@ -57,32 +47,24 @@ jobs:
                   GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
               with:
                   tag_prefix: "v"
-
             - name: Setup PNPM
               if: steps.check.outputs.release == 'true'
               uses: pnpm/action-setup@v6
-
             - name: Use Node.js 24
               if: steps.check.outputs.release == 'true'
               uses: actions/setup-node@v6
               with:
                   node-version: 24
                   cache: "pnpm"
-
             - name: Install dependencies
               if: steps.check.outputs.release == 'true'
               run: pnpm install --frozen-lockfile
-
             - name: Build web
               if: steps.check.outputs.release == 'true'
               run: pnpm buildWebStandalone
-
             - name: Create sources zip
               if: steps.check.outputs.release == 'true'
-              run:
-                  zip -r dist/extension-sources.zip . -x "node_modules/*" -x "dist/*" -x
-                  ".git/*"
-
+              run: zip -r dist/extension-sources.zip . -x "node_modules/*" -x "dist/*" -x ".git/*"
             - name: Publish extension
               if: steps.check.outputs.release == 'true' && vars.ACT == 'false'
               run: pnpx @equicord/publish-browser-extension@latest --chrome-zip

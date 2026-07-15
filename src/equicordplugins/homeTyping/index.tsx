@@ -18,7 +18,7 @@ const ThreeDots = findComponentByCodeLazy("Math.min(1,Math.max(", "dotRadius:");
 const PrivateChannelSortStore = findStoreLazy("PrivateChannelSortStore") as { getPrivateChannelIds: () => string[]; };
 
 export default definePlugin({
-    name: "HomeTyping",
+    name: "HomeTyping ( Equicord )",
     description: "Changes the home button to a typing indicator if someone in your dms is typing",
     tags: ["Chat"],
     authors: [Devs.Samwich],

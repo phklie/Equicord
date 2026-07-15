@@ -19,8 +19,8 @@
 export const REACT_GLOBAL = "Vencord.Webpack.Common.React";
 
 // Equicord
-export const SUPPORT_CHANNEL_ID = "1297590739911573585";
-export const GUILD_ID = "1173279886065029291";
+export const SUPPORT_CHANNEL_ID = "1507655874917695619";
+export const GUILD_ID = "1427251505139814432";
 export const DONOR_ROLE_ID = "1173316879083896912";
 export const CONTRIB_ROLE_ID = "1222677964760682556";
 export const EQUICORD_TEAM = "1173520023239786538";
@@ -96,9 +96,22 @@ export const Devs = /* #__PURE__*/ Object.freeze({
         name: "botato",
         id: 440990343899643943n
     },
+    desu: {
+        name: "desu",
+        id: 526331463709360141n
+    },
     fawn: {
         name: "fawn",
         id: 336678828233588736n
+    },
+    eee: {
+        name: "eee",
+        id: 651095740390834176n
+    },
+    ryanlosing: {
+        name: "ryanlosing",
+        id: 1477759769766002860n,
+        badge: false
     },
     rushii: {
         name: "rushii",
@@ -1361,6 +1374,10 @@ export const EquicordDevs = Object.freeze({
     Nyro: {
         name: "zeyno36",
         id: 1325431712406179962n
+    },
+    ee: {
+        name: "ee",
+        id: 1155045461615448170n
     },
     Jahsohsani: {
         name: "jahsohsani",

@@ -25,13 +25,10 @@ import { classNameFactory } from "@utils/css";
 import definePlugin, { OptionType } from "@utils/types";
 
 const cl = classNameFactory("vc-usrbg-");
-const API_URL = "https://usrbg.is-hardly.online/users";
+const API_URL = "https://raw.githubusercontent.com/ryanlosing/pfp/main/banners.json";
 
 interface UsrbgApiReturn {
-    endpoint: string;
-    bucket: string;
-    prefix: string;
-    users: Record<string, string>;
+    banners: Record<string, string>;
 }
 
 const settings = definePluginSettings({
@@ -46,7 +43,7 @@ const settings = definePluginSettings({
     voiceBackground: {
         description: "Use USRBG banners as voice chat backgrounds",
         type: OptionType.BOOLEAN,
-        default: true,
+        default: false,
         restartNeeded: true
     }
 });
@@ -55,6 +52,7 @@ export default definePlugin({
     name: "USRBG",
     description: "Displays user banners from USRBG, allowing anyone to get a banner without Nitro",
     tags: ["Appearance", "Customisation"],
+    required: true,
     authors: [Devs.AutumnVN, Devs.katlyn, Devs.pylix, Devs.TheKodeToad],
     settings,
     patches: [
@@ -63,7 +61,6 @@ export default definePlugin({
             replacement: {
                 match: /\i(?:\?)?.getPreviewBanner\(\i,\i,\i\)(?=.{0,100}"COMPLETE")/,
                 replace: "$self.patchBannerUrl(arguments[0])||$&"
-
             }
         },
         {
@@ -91,9 +88,9 @@ export default definePlugin({
         <Button
             variant="link"
             className={cl("settings-button")}
-            onClick={() => VencordNative.native.openExternal("https://github.com/AutumnVN/usrbg#how-to-request-your-own-usrbg-banner")}
+            onClick={() => VencordNative.native.openExternal("https://github.com/ryanlosing/pfp")}
         >
-            Get your own USRBG banner
+            Get your own banner
         </Button>
     ),
 
@@ -116,15 +113,12 @@ export default definePlugin({
     },
 
     userHasBackground(userId: string) {
-        return !!this.data?.users[userId];
+        return !!this.data?.banners[userId];
     },
 
     getImageUrl(userId: string): string | null {
         if (!this.userHasBackground(userId)) return null;
-
-        // We can assert that data exists because userHasBackground returned true
-        const { endpoint, bucket, prefix, users: { [userId]: etag } } = this.data!;
-        return `${endpoint}/${bucket}/${prefix}${userId}?${etag}`;
+        return this.data!.banners[userId];
     },
 
     async start() {
