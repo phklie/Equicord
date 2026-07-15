@@ -26,4 +26,5 @@ export const PluginInfo = {
         ...Devs.ryanlosing,
         github: "https://github.com/phklie"
     },
+    CONTRIBUTORS: {},
 } as const satisfies types.PluginInfo;

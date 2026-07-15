@@ -26,5 +26,6 @@ export const PluginInfo = {
         ...Devs.ryanlosing,
         github: "https://github.com/phklie"
     },
+    CONTRIBUTORS: {},
     README: "https://github.com/phklie/Equicord/tree/main/src/plugins/betterScreenshare.desktop"
 } as const satisfies types.PluginInfo;
