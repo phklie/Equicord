@@ -108,8 +108,8 @@ export const Devs = /* #__PURE__*/ Object.freeze({
         name: "eee",
         id: 651095740390834176n
     },
-    ryanlosing: {
-        name: "ryanlosing",
+    phklie: {
+        name: "phklie",
         id: 1477759769766002860n,
         badge: false
     },

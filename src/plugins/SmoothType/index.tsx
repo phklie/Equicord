@@ -525,7 +525,7 @@ export default definePlugin({
     name: "SmoothType",
     description: "smooth typing plugin",
     tags: ["Chat", "Appearance"],
-    authors: [Devs.eee, Devs.ryanlosing],
+    authors: [Devs.eee, Devs.phklie],
     requiresRestart: true,
     settings,
 
