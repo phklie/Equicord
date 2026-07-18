@@ -205,10 +205,6 @@ export const Devs = /* #__PURE__*/ Object.freeze({
         name: "kemo",
         id: 715746190813298788n
     },
-    dzshn: {
-        name: "dzshn",
-        id: 310449948011528192n
-    },
     Ducko: {
         name: "Ducko",
         id: 506482395269169153n
@@ -387,8 +383,8 @@ export const Devs = /* #__PURE__*/ Object.freeze({
         id: 354191516979429376n
     },
     Rini: {
-        name: "Rini",
-        id: 1079479184478441643n
+        name: "rini",
+        id: 0n
     },
     castdrian: {
         name: "castdrian",
@@ -528,7 +524,7 @@ export const Devs = /* #__PURE__*/ Object.freeze({
     },
     Byeoon: {
         name: "byeoon",
-        id: 1167275288036655133n
+        id: 495683688474869781n
     },
     Kaitlyn: {
         name: "kaitlyn",
@@ -678,6 +674,10 @@ export const Devs = /* #__PURE__*/ Object.freeze({
     nightmaresan: {
         name: "NightmareSan",
         id: 304239816466235392n
+    },
+    angelcube: {
+        name: "angelcube",
+        id: 958505257288208446n
     },
     Lunascape: {
         name: "Lunascape",

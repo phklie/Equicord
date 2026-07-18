@@ -81,8 +81,8 @@ export default definePlugin({
                     replace: "$self.DecorationGridItem=$1;",
                 },
                 {
-                    match: /(?<==)\i=>{let{user:\i,avatarDecoration/,
-                    replace: "$self.DecorationGridDecoration=$&",
+                    match: /(?<=(?:(\i)=)?)(?:\i=>|function (\i)\(\i\)){let{user:\i,avatarDecoration/,
+                    replace: (m, arrowFunctionName, functionName) => `$self.DecorationGridDecoration=${arrowFunctionName ?? functionName}${arrowFunctionName ? "" : ";"}${m}`,
                 },
                 {
                     match: /(?<=\i\.PURCHASE)(?=,)(?<=avatarDecoration:(\i).+?)/,
@@ -141,7 +141,7 @@ export default definePlugin({
             find: '("UserProfileModalV2EditingPanel")',
             replacement: [
                 {
-                    match: /"inline"===.{0,100}#{intl::Zenogr::raw}\)/,
+                    match: /"inline"===.{0,100}bannerErrorMessage:\i\}\)/,
                     replace: "$self.ExperimentDecorSection(),$&"
                 }
             ]
