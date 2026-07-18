@@ -57,7 +57,6 @@ export default definePlugin({
     name: "Decor",
     description: "Create and use your own custom avatar decorations, or pick your favorite from the presets.",
     tags: ["Appearance", "Customisation"],
-    required: true,
     authors: [Devs.FieryFlames],
     patches: [
         {
