@@ -25,6 +25,7 @@ import definePlugin, { OptionType } from "@utils/types";
 import type { Channel, Guild, User } from "@vencord/discord-types";
 import { GuildMemberStore, IconUtils, Menu } from "@webpack/common";
 
+
 interface UserContextProps {
     channel: Channel;
     guildId?: string;
@@ -200,8 +201,8 @@ export default definePlugin({
         {
             find: "return{avatarProps:{",
             replacement: {
-                match: /(?<=avatarProps:(\i),eventHandlers:(\i).{0,100}?)return null==/,
-                replace: 'Object.assign($2,{style:{cursor:"pointer"},onClick:()=>$self.openAvatar($1.src)});$&',
+                match: /(?<=avatarProps:(\i),eventHandlers:\i.{0,100}?)return null==(?<=onOpenAvatar:(\i).+?)/,
+                replace: "$2&&=$self.openAvatar.bind(undefined,$1.src);$&",
             }
         },
         // Banners
