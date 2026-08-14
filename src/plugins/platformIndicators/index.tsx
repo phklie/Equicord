@@ -74,9 +74,7 @@ const PlatformIcon = ({ platform, status, small }: { platform: DiscordPlatform; 
     return <Icon color={useStatusFillColor(status)} tooltip={tooltip} small={small} />;
 };
 
-// FIX: plain function (no Hook inside), so it's safe to call from
-// anywhere - components, getBadges, nickname icon renderer, etc.
-// Both files agreed on this name; only the "use..." hook version was broken.
+
 function ensureOwnStatus(user: User) {
     if (user.id !== AuthenticationStore.getId()) return;
 
