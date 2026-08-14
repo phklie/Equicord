@@ -34,7 +34,7 @@ const { useStatusFillColor } = mapMangledModuleLazy([".5625*", "translate"], {
 });
 
 const platformMap = {
-    embedded: "Console",
+    embedded: "Embedded (Console or Game)",
     vr: "VR"
 };
 
@@ -74,28 +74,29 @@ const PlatformIcon = ({ platform, status, small }: { platform: DiscordPlatform; 
     return <Icon color={useStatusFillColor(status)} tooltip={tooltip} small={small} />;
 };
 
-function ensureOwnStatus(user: User) {
-    if (user.id === AuthenticationStore.getId()) {
-        const sessions = SessionsStore.getSessions();
-        if (typeof sessions !== "object") return null;
-        const sortedSessions = Object.values(sessions).sort(({ status: a }, { status: b }) => {
-            if (a === b) return 0;
-            if (a === "online") return 1;
-            if (b === "online") return -1;
-            if (a === "idle") return 1;
-            if (b === "idle") return -1;
-            return 0;
-        });
+function useEnsureOwnStatus(user: User) {
+    if (user.id !== AuthenticationStore.getId()) return;
 
-        const ownStatus = Object.values(sortedSessions).reduce((acc, curr) => {
-            if (curr.clientInfo.client !== "unknown")
-                acc[curr.clientInfo.client] = curr.status;
-            return acc;
-        }, {});
+    const sessions = useStateFromStores([SessionsStore], () => SessionsStore.getSessions());
+    if (typeof sessions !== "object") return null;
 
-        const { clientStatuses } = PresenceStore.getState();
-        clientStatuses[AuthenticationStore.getId()] = ownStatus;
-    }
+    const sortedSessions = Object.values(sessions).sort(({ status: a }, { status: b }) => {
+        if (a === b) return 0;
+        if (a === "online") return 1;
+        if (b === "online") return -1;
+        if (a === "idle") return 1;
+        if (b === "idle") return -1;
+        return 0;
+    });
+
+    const ownStatus = Object.values(sortedSessions).reduce((acc, curr) => {
+        if (curr.clientInfo.client !== "unknown")
+            acc[curr.clientInfo.client] = curr.status;
+        return acc;
+    }, {});
+
+    const { clientStatuses } = PresenceStore.getState();
+    clientStatuses[UserStore.getCurrentUser().id] = ownStatus;
 }
 
 function getBadges({ userId }: BadgeUserArgs): ProfileBadge[] {
@@ -139,7 +140,6 @@ const PlatformIndicator = ({ user, small = false }: { user: User; small?: boolea
     ));
 
     if (!icons.length) return null;
-
     return (
         <span className="vc-platform-indicator" style={{ gap: "2px" }}>
             {icons}
