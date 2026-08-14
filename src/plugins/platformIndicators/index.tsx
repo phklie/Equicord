@@ -74,10 +74,13 @@ const PlatformIcon = ({ platform, status, small }: { platform: DiscordPlatform; 
     return <Icon color={useStatusFillColor(status)} tooltip={tooltip} small={small} />;
 };
 
-function useEnsureOwnStatus(user: User) {
+// FIX: plain function (no Hook inside), so it's safe to call from
+// anywhere - components, getBadges, nickname icon renderer, etc.
+// Both files agreed on this name; only the "use..." hook version was broken.
+function ensureOwnStatus(user: User) {
     if (user.id !== AuthenticationStore.getId()) return;
 
-    const sessions = useStateFromStores([SessionsStore], () => SessionsStore.getSessions());
+    const sessions = SessionsStore.getSessions();
     if (typeof sessions !== "object") return null;
 
     const sortedSessions = Object.values(sessions).sort(({ status: a }, { status: b }) => {
@@ -96,7 +99,7 @@ function useEnsureOwnStatus(user: User) {
     }, {});
 
     const { clientStatuses } = PresenceStore.getState();
-    clientStatuses[UserStore.getCurrentUser().id] = ownStatus;
+    clientStatuses[AuthenticationStore.getId()] = ownStatus;
 }
 
 function getBadges({ userId }: BadgeUserArgs): ProfileBadge[] {
@@ -214,18 +217,18 @@ export default definePlugin({
 
     start() {
         Object.entries(indicatorLocations).forEach(([key, value]) => {
-    if (key === "badges") {
-        if (
-            settings.store[key] &&
-            settings.store.profileLocation === "with-badges"
-        ) {
-            value.onEnable();
-        }
-        return;
-    }
+            if (key === "badges") {
+                if (
+                    settings.store[key] &&
+                    settings.store.profileLocation === "with-badges"
+                ) {
+                    value.onEnable();
+                }
+                return;
+            }
 
-    if (settings.store[key]) value.onEnable();
-});
+            if (settings.store[key]) value.onEnable();
+        });
 
         if (settings.store.profileLocation === "next-to-name") {
             addNicknameIcon("PlatformIndicators", ({ userId }) => {
