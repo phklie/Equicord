@@ -137,6 +137,25 @@ export default definePlugin({
             ]
         }
     ],
+    contextMenus: {
+        "user-context": (children, { user }) => {
+            if (!user?.id) return;
+
+            children.push(
+                <Menu.MenuSeparator />,
+                <Menu.MenuItem
+                    label="Set Avatar"
+                    id="set-avatar"
+                    icon={PencilIcon}
+                    leadingAccessory={{ type: "icon", icon: PencilIcon }}
+                    action={async () => {
+                        await requireSettingsModal();
+                        openModal(modalProps => <SetAvatarModal userId={user.id} modalProps={modalProps} />);
+                    }}
+                />
+            );
+        }
+    },
     getAvatarHook: (original: any) => (user: User, animated: boolean, size: number) => {
         if (settings.store.preferNitro && user.avatar?.startsWith("a_")) return original(user, animated, size);
         if (!data.avatars[user.id]) return original(user, animated, size);
