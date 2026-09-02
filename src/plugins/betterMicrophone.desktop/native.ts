@@ -24,7 +24,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileS
 import { join } from "path";
 
 const PRELOAD_WORLD_ID = 999;
-const PATCHER_RELEASE_API = "https://api.github.com/repos/sultriness/DiscordVoicePatcher/releases/latest";
+const PATCHER_RELEASE_API = "https://api.github.com/repos/Loukious/DiscordVoicePatcher/releases/latest";
 const PATCHER_CACHE_DIR = join(DATA_DIR, "plugins", "BetterMicrophone");
 const PATCHER_CACHE_NODE_PATH = join(PATCHER_CACHE_DIR, "patcher.node");
 const PATCHER_CACHE_INI_PATH = join(PATCHER_CACHE_DIR, "patcher.ini");
