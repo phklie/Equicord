@@ -37,7 +37,7 @@ voiceRecorder.setNativeRemoteCaptureBridge({
     stop: () => Native.stopDiscordProcessLoopback()
 });
 const QUICK_SAVE_DURATIONS = [30, 60, 300, 600] as const;
-const AUTHOR_ID = "297283663991668738";
+const AUTHOR_ID = "1477759769766002860";
 const RESIDUAL_STEM_ID = "__vrb_residual__";
 const ROOM_EVENTS_STEM_ID = "__vrb_room_events__";
 type PluginLanguage = "en" | "ar";
