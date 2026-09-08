@@ -4,460 +4,757 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import "./styles.css";
-
 import { definePluginSettings } from "@api/Settings";
-import { Devs } from "@utils/constants";
-import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
-import {
-    Button,
-    createRoot,
-    Forms,
-    React,
-    showToast,
-    TextInput,
-    Toasts,
-    useEffect,
-    useMemo,
-    useRef,
-    useState
-} from "@webpack/common";
-import type { Root } from "react-dom/client";
+import { Forms, IconUtils, React, showToast, Toasts, UserStore } from "@webpack/common";
+import { Devs } from "@utils/constants";
 
-const logger = new Logger("PasscodeLock");
-const OVERLAY_ID = "vc-passcode-lock";
-const PBKDF2_ITERATIONS = 210_000;
+const OVERLAY_ID = "vcl-overlay";
 
-type CodeType = "four" | "six" | "custom";
+const PASSWORD_TYPE_OPTIONS = [
+    { label: "Numbers only", value: "numeric", default: false },
+    { label: "Letters & numbers", value: "alnum", default: true },
+];
 
-interface PrivateSettings {
-    hash?: string;
-    salt?: string;
-    iterations?: number;
-    locked?: boolean;
-    attempts?: number;
-    cooldownUntil?: number;
+const PIN_LENGTH_OPTIONS = [
+    { label: "4 digits", value: "4", default: true },
+    { label: "6 digits", value: "6", default: false },
+    { label: "Custom", value: "custom", default: false },
+];
+
+function getPinLength(): number {
+    const mode = settings.store.pinLength;
+    if (mode === "4") return 4;
+    if (mode === "6") return 6;
+    const custom = Number(settings.store.pinLengthCustom);
+    return custom > 0 ? Math.floor(custom) : 4;
+}
+
+// ─── Password field (masked, local state, commits on blur so typing/backspace always works) ─
+
+function PasswordSettingComponent() {
+    const [value, setValue] = React.useState(settings.store.password);
+
+    const commit = () => { settings.store.password = value; };
+
+    const isNumeric = settings.store.passwordType === "numeric";
+    const requiredLen = getPinLength();
+    const mismatch = isNumeric && value.length > 0 && value.length !== requiredLen;
+
+    return (
+        <>
+            <input
+                type="password"
+                value={value}
+                placeholder="Set an unlock password"
+                autoComplete="new-password"
+                spellCheck={false}
+                onChange={e => {
+                    let v = e.target.value;
+                    if (isNumeric) {
+                        v = v.replace(/[^0-9]/g, "");
+                        if (v.length > requiredLen) v = v.slice(0, requiredLen);
+                    }
+                    setValue(v);
+                }}
+                onBlur={commit}
+                onKeyDown={e => {
+                    if (e.key === "Enter") { commit(); (e.target as HTMLInputElement).blur(); }
+                }}
+                style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "12px",
+                    border: mismatch ? "1px solid rgb(242, 63, 66)" : "1px solid var(--input-border, #4e5058)",
+                    background: "var(--input-background, #1e1f22)",
+                    color: "var(--text-normal, #dbdee1)",
+                    fontSize: "16px",
+                    outline: "none",
+                    boxSizing: "border-box",
+                    transition: "border-color 0.15s ease, background 0.15s ease",
+                }}
+            />
+            <Forms.FormText style={{ marginTop: "6px", opacity: mismatch ? 0.9 : 0.6, fontSize: "12px", color: mismatch ? "rgb(242, 63, 66)" : undefined }}>
+                {isNumeric
+                    ? mismatch
+                        ? `Type ${requiredLen - value.length} more digit${requiredLen - value.length === 1 ? "" : "s"} to complete the PIN.`
+                        : `Digits only, up to ${requiredLen} digits.`
+                    : "Letters and numbers only."} Leave empty to disable the lock.
+            </Forms.FormText>
+        </>
+    );
 }
 
 const settings = definePluginSettings({
-    setup: {
+    password: {
         type: OptionType.COMPONENT,
-        description: "Set or change the passcode",
-        component: PasscodeSettings
+        description: "Unlock password",
+        component: () => <PasswordSettingComponent />,
     },
-    codeType: {
+    passwordType: {
         type: OptionType.SELECT,
-        description: "Passcode format",
-        options: [
-            { label: "4-digit numeric code", value: "four", default: true },
-            { label: "6-digit numeric code", value: "six" },
-            { label: "Custom numeric code", value: "custom" }
-        ],
-        onChange: () => {
-
-            settings.store.hash = undefined;
-            settings.store.salt = undefined;
-            settings.store.iterations = undefined;
-            showToast("Code type changed. Set a new passcode.", Toasts.Type.MESSAGE);
-        }
+        description: "Allowed password characters — also changes the lock screen style (numeric = PIN style)",
+        options: PASSWORD_TYPE_OPTIONS,
+        restartNeeded: false,
     },
-    autoLock: {
+    pinLength: {
         type: OptionType.SELECT,
-        description: "Lock Discord after the window has been unfocused for this long",
-        options: [
-            { label: "Disabled", value: 0, default: true },
-            { label: "1 minute", value: 60_000 },
-            { label: "5 minutes", value: 300_000 },
-            { label: "15 minutes", value: 900_000 },
-            { label: "1 hour", value: 3_600_000 },
-            { label: "5 hours", value: 18_000_000 }
-        ]
+        description: "PIN length (only used when password type is Numbers only)",
+        options: PIN_LENGTH_OPTIONS,
+        restartNeeded: false,
     },
-    keybind: {
+    pinLengthCustom: {
+        type: OptionType.NUMBER,
+        description: "Custom PIN length (used when PIN length above is set to Custom)",
+        default: 5,
+        restartNeeded: false,
+    },
+    autoLockMinutes: {
+        type: OptionType.NUMBER,
+        description: "Auto-lock after N minutes of inactivity (0 = disabled)",
+        default: 5,
+        restartNeeded: false,
+    },
+    blurAmount: {
+        type: OptionType.SLIDER,
+        description: "Blur intensity",
+        default: 18,
+        markers: [0, 4, 8, 12, 16, 20, 24, 28, 32],
+        restartNeeded: false,
+    },
+    shortcut: {
         type: OptionType.STRING,
-        description: "Keyboard shortcut used to lock Discord (example: Ctrl+L)",
-        default: "Ctrl+L"
+        description: "Manual lock keyboard shortcut (e.g. Ctrl+L, Alt+K, Ctrl+Shift+P)",
+        default: "Ctrl+L",
+        restartNeeded: false,
     },
-    lockOnStartup: {
-        type: OptionType.BOOLEAN,
-        description: "Always lock Discord when the plugin starts",
-        default: true
+});
+
+// ─── State ────────────────────────────────────────────────────────────
+
+let overlay: HTMLDivElement | null = null;
+let domObserver: MutationObserver | null = null;
+let keyGuard: ((e: KeyboardEvent) => void) | null = null;
+let focusGuard: ((e: FocusEvent) => void) | null = null;
+let inactiveTimer: ReturnType<typeof setTimeout> | null = null;
+let shortcutListener: ((e: KeyboardEvent) => void) | null = null;
+
+const ACTIVITY_EVENTS = ["mousemove", "mousedown", "keydown", "scroll", "touchstart"] as const;
+
+// ─── Activity / auto-lock timer ────────────────────────────────────────
+
+function onActivity() {
+    if (overlay) return;
+    if (inactiveTimer) clearTimeout(inactiveTimer);
+    const mins = settings.store.autoLockMinutes;
+    if (mins > 0) inactiveTimer = setTimeout(lock, mins * 60_000);
+}
+
+function bindActivity() {
+    ACTIVITY_EVENTS.forEach(ev => document.addEventListener(ev, onActivity, { passive: true }));
+    onActivity();
+}
+
+function unbindActivity() {
+    ACTIVITY_EVENTS.forEach(ev => document.removeEventListener(ev, onActivity));
+    if (inactiveTimer) { clearTimeout(inactiveTimer); inactiveTimer = null; }
+}
+
+// ─── Manual shortcut (configurable) ─────────────────────────────────────
+
+function parseShortcut(raw: string) {
+    const parts = (raw || "").split("+").map(p => p.trim()).filter(Boolean);
+    let ctrl = false, alt = false, shift = false, key = "";
+    for (const p of parts) {
+        const low = p.toLowerCase();
+        if (low === "ctrl" || low === "control") ctrl = true;
+        else if (low === "alt") alt = true;
+        else if (low === "shift") shift = true;
+        else key = p;
     }
-}).withPrivateSettings<PrivateSettings>();
-
-function bytesToBase64(bytes: Uint8Array): string {
-    let binary = "";
-    for (const byte of bytes) binary += String.fromCharCode(byte);
-    return btoa(binary);
+    return { ctrl, alt, shift, key: key.toLowerCase() };
 }
 
-function base64ToBytes(value: string): Uint8Array {
-    return Uint8Array.from(atob(value), char => char.charCodeAt(0));
-}
-
-async function deriveHash(passcode: string, salt: Uint8Array, iterations: number): Promise<string> {
-
-    const saltBuffer = Uint8Array.from(salt).buffer;
-    const material = await crypto.subtle.importKey(
-        "raw",
-        new TextEncoder().encode(passcode),
-        "PBKDF2",
-        false,
-        ["deriveBits"]
-    );
-    const bits = await crypto.subtle.deriveBits(
-        {
-            name: "PBKDF2",
-            hash: "SHA-256",
-            salt: saltBuffer,
-            iterations
-        },
-        material,
-        256
-    );
-    return bytesToBase64(new Uint8Array(bits));
-}
-
-async function setPasscode(passcode: string): Promise<void> {
-    const salt = crypto.getRandomValues(new Uint8Array(32));
-    settings.store.salt = bytesToBase64(salt);
-    settings.store.iterations = PBKDF2_ITERATIONS;
-    settings.store.hash = await deriveHash(passcode, salt, PBKDF2_ITERATIONS);
-    settings.store.attempts = 0;
-    settings.store.cooldownUntil = 0;
-}
-
-async function verifyPasscode(passcode: string): Promise<boolean> {
-    const { hash, salt, iterations } = settings.store;
-    if (!hash || !salt || !iterations) return false;
-
-    const candidate = await deriveHash(passcode, base64ToBytes(salt), iterations);
-    if (candidate.length !== hash.length) return false;
-
-
-    let mismatch = 0;
-    for (let i = 0; i < hash.length; i++) {
-        mismatch |= hash.charCodeAt(i) ^ candidate.charCodeAt(i);
-    }
-    return mismatch === 0;
-}
-
-function requiredLength(): number | null {
-    const type = settings.store.codeType as CodeType;
-    return type === "four" ? 4 : type === "six" ? 6 : null;
-}
-
-function validatePasscode(value: string): string | null {
-    if (!/^\d+$/.test(value)) return "The passcode must contain only numbers.";
-    const length = requiredLength();
-    if (length != null && value.length !== length) return `Enter exactly ${length} digits.`;
-    if (length == null && (value.length < 4 || value.length > 32)) return "Enter between 4 and 32 digits.";
-    return null;
-}
-
-function PasscodeSettings() {
-    const [first, setFirst] = useState("");
-    const [second, setSecond] = useState("");
-    const [busy, setBusy] = useState(false);
-    const hasPasscode = Boolean(settings.store.hash);
-
-    const save = async () => {
-        const error = validatePasscode(first);
-        if (error) return showToast(error, Toasts.Type.FAILURE);
-        if (first !== second) return showToast("The passcodes do not match.", Toasts.Type.FAILURE);
-
-        setBusy(true);
-        try {
-            await setPasscode(first);
-            setFirst("");
-            setSecond("");
-            showToast("Passcode saved securely.", Toasts.Type.SUCCESS);
-        } catch (error) {
-            logger.error("Failed to save passcode", error);
-            showToast("Could not save the passcode.", Toasts.Type.FAILURE);
-        } finally {
-            setBusy(false);
+function bindShortcut() {
+    shortcutListener = (e: KeyboardEvent) => {
+        if (overlay) return;
+        const { ctrl, alt, shift, key } = parseShortcut(settings.store.shortcut);
+        if (!key) return;
+        if (e.ctrlKey === ctrl && e.altKey === alt && e.shiftKey === shift && e.key.toLowerCase() === key) {
+            e.preventDefault();
+            e.stopPropagation();
+            lock();
         }
     };
-
-    return (
-        <div className="vc-pcl-settings">
-            <Forms.FormTitle tag="h3">{hasPasscode ? "Change passcode" : "Create passcode"}</Forms.FormTitle>
-            <Forms.FormText>
-                This prevents casual access to Discord. For real device security, lock your operating-system account.
-            </Forms.FormText>
-            <div className="vc-pcl-settings-inputs">
-                <TextInput
-                    type="password"
-                    value={first}
-                    placeholder="New numeric passcode"
-                    onChange={setFirst}
-                    maxLength={32}
-                />
-                <TextInput
-                    type="password"
-                    value={second}
-                    placeholder="Repeat passcode"
-                    onChange={setSecond}
-                    maxLength={32}
-                    onKeyDown={(event: React.KeyboardEvent) => {
-                        if (event.key === "Enter") void save();
-                    }}
-                />
-            </div>
-            <div className="vc-pcl-settings-buttons">
-                <Button disabled={busy || !first || !second} onClick={() => void save()}>
-                    {busy ? "Saving…" : "Save passcode"}
-                </Button>
-                <Button
-                    color={Button.Colors.PRIMARY}
-                    disabled={!hasPasscode}
-                    onClick={() => lock()}
-                >
-                    Lock now
-                </Button>
-            </div>
-        </div>
-    );
+    document.addEventListener("keydown", shortcutListener, true);
 }
 
-interface LockScreenProps {
-    onUnlock(): void;
+function unbindShortcut() {
+    if (shortcutListener) {
+        document.removeEventListener("keydown", shortcutListener, true);
+        shortcutListener = null;
+    }
 }
 
-function LockScreen({ onUnlock }: LockScreenProps) {
-    const maxLength = requiredLength() ?? 32;
-    const [code, setCode] = useState("");
-    const [busy, setBusy] = useState(false);
-    const [error, setError] = useState("");
-    const [now, setNow] = useState(Date.now());
-    const inputRef = useRef<HTMLInputElement>(null);
+// ─── Lock / unlock ──────────────────────────────────────────────────────
 
-    const cooldownUntil = settings.store.cooldownUntil ?? 0;
-    const cooldownSeconds = Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
-
-    useEffect(() => {
-        inputRef.current?.focus();
-        if (cooldownSeconds <= 0) return;
-        const timer = window.setInterval(() => setNow(Date.now()), 250);
-        return () => window.clearInterval(timer);
-    }, [cooldownSeconds > 0]);
-
-    const submit = async (candidate = code) => {
-        if (busy || cooldownUntil > Date.now() || !candidate) return;
-        setBusy(true);
-        setError("");
-
-        try {
-            if (await verifyPasscode(candidate)) {
-                settings.store.attempts = 0;
-                settings.store.cooldownUntil = 0;
-                onUnlock();
-                return;
-            }
-
-            const attempts = (settings.store.attempts ?? 0) + 1;
-            settings.store.attempts = attempts;
-            setCode("");
-            if (attempts >= 3) {
-                const delay = Math.min(30_000, 5_000 * (attempts - 2));
-                settings.store.cooldownUntil = Date.now() + delay;
-                setNow(Date.now());
-                setError("Too many attempts.");
-            } else {
-                setError("Incorrect passcode.");
-            }
-        } catch (verificationError) {
-            logger.error("Passcode verification failed", verificationError);
-            setError("Could not verify the passcode.");
-        } finally {
-            setBusy(false);
-            inputRef.current?.focus();
-        }
-    };
-
-    const append = (digit: string) => {
-        if (busy || cooldownSeconds > 0 || code.length >= maxLength) return;
-        const next = code + digit;
-        setCode(next);
-        const length = requiredLength();
-        if (length != null && next.length === length) void submit(next);
-    };
-
-    const dots = useMemo(
-        () => Array.from({ length: Math.min(code.length, 32) }, (_, index) => <span key={index} />),
-        [code.length]
-    );
-
-    return (
-        <div className="vc-pcl-screen" role="dialog" aria-modal="true" aria-label="Discord is locked">
-            <div className="vc-pcl-card">
-                <svg className="vc-pcl-icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M18 10h-1V7a5 5 0 0 0-10 0v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2ZM9 7a3 3 0 0 1 6 0v3H9V7Zm4 10.73V19h-2v-1.27a2 2 0 1 1 2 0Z" />
-                </svg>
-                <h1>Discord is locked</h1>
-                <p>Enter your passcode to continue</p>
-
-                <input
-                    ref={inputRef}
-                    className="vc-pcl-hidden-input"
-                    type="password"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    value={code}
-                    maxLength={maxLength}
-                    aria-label="Passcode"
-                    onChange={event => {
-                        const next = event.currentTarget.value.replace(/\D/g, "").slice(0, maxLength);
-                        setCode(next);
-                        const length = requiredLength();
-                        if (length != null && next.length === length) void submit(next);
-                    }}
-                    onKeyDown={event => {
-                        if (event.key === "Enter") void submit();
-                        if (event.key === "Escape") event.preventDefault();
-                    }}
-                />
-
-                <div className="vc-pcl-dots" aria-hidden="true">{dots}</div>
-                <div className="vc-pcl-status" aria-live="polite">
-                    {cooldownSeconds > 0 ? `Try again in ${cooldownSeconds}s` : error}
-                </div>
-
-                <div className="vc-pcl-keypad">
-                    {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map(digit => (
-                        <button key={digit} type="button" onClick={() => append(digit)}>{digit}</button>
-                    ))}
-                    <button type="button" aria-label="Clear" onClick={() => setCode("")}>C</button>
-                    <button type="button" onClick={() => append("0")}>0</button>
-                    <button type="button" aria-label="Delete digit" onClick={() => setCode(value => value.slice(0, -1))}>⌫</button>
-                </div>
-
-                {requiredLength() == null && (
-                    <Button className="vc-pcl-unlock" disabled={busy || !code || cooldownSeconds > 0} onClick={() => void submit()}>
-                        Unlock
-                    </Button>
-                )}
-            </div>
-        </div>
-    );
-}
-
-let overlayRoot: Root | null = null;
-let overlayElement: HTMLDivElement | null = null;
-let autoLockTimer: number | undefined;
-
-function blockUnderlyingInput(event: Event): void {
-    if (!settings.store.locked) return;
-    if (overlayElement?.contains(event.target as Node)) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-}
-
-function addInputGuards(): void {
-    window.addEventListener("keydown", blockUnderlyingInput, true);
-    window.addEventListener("keyup", blockUnderlyingInput, true);
-    window.addEventListener("pointerdown", blockUnderlyingInput, true);
-    window.addEventListener("contextmenu", blockUnderlyingInput, true);
-    window.addEventListener("wheel", blockUnderlyingInput, { capture: true, passive: false });
-}
-
-function removeInputGuards(): void {
-    window.removeEventListener("keydown", blockUnderlyingInput, true);
-    window.removeEventListener("keyup", blockUnderlyingInput, true);
-    window.removeEventListener("pointerdown", blockUnderlyingInput, true);
-    window.removeEventListener("contextmenu", blockUnderlyingInput, true);
-    window.removeEventListener("wheel", blockUnderlyingInput, true);
-}
-
-function unlock(): void {
-    settings.store.locked = false;
-    removeInputGuards();
-    overlayRoot?.unmount();
-    overlayElement?.remove();
-    overlayRoot = null;
-    overlayElement = null;
-}
-
-function lock(): void {
-    if (settings.store.locked && overlayElement) return;
-    if (!settings.store.hash) {
-        showToast("Set a passcode in PasscodeLock settings first.", Toasts.Type.FAILURE);
+function lock() {
+    if (!settings.store.password) {
+        showToast("Set an unlock password in DiscordLock settings first", Toasts.Type.FAILURE);
         return;
     }
-
-    settings.store.locked = true;
-    overlayElement = document.createElement("div");
-    overlayElement.id = OVERLAY_ID;
-    document.body.appendChild(overlayElement);
-    overlayRoot = createRoot(overlayElement);
-    overlayRoot.render(<LockScreen onUnlock={unlock} />);
-    addInputGuards();
+    if (settings.store.passwordType === "numeric" && settings.store.password.length !== getPinLength()) {
+        showToast(`Your password must be exactly ${getPinLength()} digits — check DiscordLock settings`, Toasts.Type.FAILURE);
+        return;
+    }
+    unbindActivity();
+    if (!document.getElementById(OVERLAY_ID)) createOverlay();
+    else bringOverlayToFront();
 }
 
-function normalizeKey(value: string): string {
-    const key = value.toLowerCase();
-    if (key === "control") return "ctrl";
-    if (key === " ") return "space";
-    return key;
+function unlock() {
+    domObserver?.disconnect();
+    domObserver = null;
+
+    if (keyGuard) { document.removeEventListener("keydown", keyGuard, true); keyGuard = null; }
+    if (focusGuard) { document.removeEventListener("focusin", focusGuard, true); focusGuard = null; }
+    if (overlay && (overlay as any)._pinKeydown) {
+        document.removeEventListener("keydown", (overlay as any)._pinKeydown, true);
+    }
+
+    if (overlay) {
+        overlay.style.transition = "opacity 0.28s ease";
+        overlay.style.opacity = "0";
+        setTimeout(() => {
+            overlay?.remove();
+            overlay = null;
+        }, 300);
+    }
+
+    bindActivity();
 }
 
-function matchesKeybind(event: KeyboardEvent, keybind: string): boolean {
-    const parts = keybind.toLowerCase().split("+").map(part => part.trim()).filter(Boolean);
-    if (parts.length === 0) return false;
+// ─── Helpers ──────────────────────────────────────────────────────────
 
-    const modifiers = new Set(parts.filter(part => ["ctrl", "control", "alt", "shift", "meta", "win"].includes(part)));
-    const key = parts.find(part => !modifiers.has(part));
-    if (!key) return false;
-
-    return event.ctrlKey === (modifiers.has("ctrl") || modifiers.has("control"))
-        && event.altKey === modifiers.has("alt")
-        && event.shiftKey === modifiers.has("shift")
-        && event.metaKey === (modifiers.has("meta") || modifiers.has("win"))
-        && normalizeKey(event.key) === normalizeKey(key);
+function getUserAssets() {
+    const user = UserStore.getCurrentUser();
+    if (!user) return { avatarUrl: "", username: "User" };
+    const avatarUrl = IconUtils.getUserAvatarURL(user, false, 128);
+    return { avatarUrl, username: user.globalName || user.username || "User" };
 }
 
-function onGlobalKeyDown(event: KeyboardEvent): void {
-    if (settings.store.locked || !matchesKeybind(event, settings.store.keybind)) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    lock();
+function escapeHtml(text: string) {
+    return text.replace(/[&<>"']/g, char => {
+        switch (char) {
+            case "&": return "&amp;";
+            case "<": return "&lt;";
+            case ">": return "&gt;";
+            case "\"": return "&quot;";
+            default: return "&#39;";
+        }
+    });
 }
 
-function onWindowBlur(): void {
-    window.clearTimeout(autoLockTimer);
-    const delay = settings.store.autoLock;
-    if (!delay || settings.store.locked || !settings.store.hash) return;
-    autoLockTimer = window.setTimeout(lock, delay);
+function focusInput() {
+    const input = overlay?.querySelector<HTMLInputElement>("#vcl-input");
+    if (!input) return;
+    requestAnimationFrame(() => input.focus());
 }
 
-function onWindowFocus(): void {
-    window.clearTimeout(autoLockTimer);
+function bringOverlayToFront() {
+    if (!overlay) return;
+    if (overlay.parentElement !== document.body || document.body.lastElementChild !== overlay) {
+        document.body.appendChild(overlay);
+    }
+    if (settings.store.passwordType !== "numeric") focusInput();
 }
+
+// ─── Styles (gray / transparent black) ─────────────────────────────────
+
+function injectStyles(blur: number) {
+    document.getElementById("vcl-styles")?.remove();
+
+    const fa = document.createElement("link");
+    fa.id = "vcl-fa";
+    fa.rel = "stylesheet";
+    fa.href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css";
+    if (!document.getElementById("vcl-fa")) document.head.appendChild(fa);
+
+    const st = document.createElement("style");
+    st.id = "vcl-styles";
+    st.textContent = `
+        #vcl-overlay {
+            position:                fixed;
+            inset:                   0;
+            z-index:                 2147483647;
+            pointer-events:          auto;
+            isolation:               isolate;
+            display:                 flex;
+            flex-direction:          column;
+            align-items:             center;
+            justify-content:         center;
+            background:              rgba(20,20,22,0.55);
+            backdrop-filter:         blur(${blur}px) brightness(0.4) saturate(0.15) grayscale(0.3);
+            -webkit-backdrop-filter: blur(${blur}px) brightness(0.4) saturate(0.15) grayscale(0.3);
+            overflow:                hidden;
+            cursor:                  default;
+        }
+
+        #vcl-avatar {
+            width:               72px;
+            height:              72px;
+            border-radius:       50%;
+            background-size:     cover;
+            background-position: center;
+            background-color:    rgba(120,120,120,0.15);
+            border:              1.5px solid rgba(180,180,180,0.2);
+            margin-bottom:       18px;
+            box-shadow:          0 8px 32px rgba(0,0,0,0.55);
+            animation:           vcl-up 0.42s cubic-bezier(0.22,1,0.36,1) both;
+        }
+
+        #vcl-username {
+            font-family:    'gg sans','Noto Sans',system-ui,sans-serif;
+            font-size:      18px;
+            font-weight:    600;
+            letter-spacing: -0.3px;
+            color:          rgba(230,230,232,0.92);
+            margin:         0 0 6px;
+            animation:      vcl-up 0.42s cubic-bezier(0.22,1,0.36,1) 0.05s both;
+        }
+
+        #vcl-sub {
+            font-family: 'gg sans','Noto Sans',system-ui,sans-serif;
+            font-size:   13px;
+            color:       rgba(160,160,165,0.55);
+            margin:      0 0 30px;
+            animation:   vcl-up 0.42s cubic-bezier(0.22,1,0.36,1) 0.09s both;
+        }
+
+        /* ── text (alnum) mode ── */
+
+        #vcl-input-wrap {
+            position:  relative;
+            width:     280px;
+            animation: vcl-up 0.42s cubic-bezier(0.22,1,0.36,1) 0.13s both;
+        }
+
+        #vcl-input-wrap > i.vcl-icon-lock {
+            position:       absolute;
+            left:           15px;
+            top:            50%;
+            transform:      translateY(-50%);
+            font-size:      11.5px;
+            color:          rgba(180,180,185,0.3);
+            pointer-events: none;
+            transition:     color 0.2s;
+        }
+        #vcl-input-wrap:focus-within > i.vcl-icon-lock { color: rgba(200,200,205,0.55); }
+
+        #vcl-input {
+            width:          100%;
+            padding:        13px 44px 13px 40px;
+            background:     rgba(90,90,95,0.18);
+            border:         1px solid rgba(170,170,175,0.16);
+            border-radius:  14px;
+            color:          rgba(230,230,232,0.9);
+            font-size:      14px;
+            font-family:    'gg sans','Noto Sans',system-ui,sans-serif;
+            letter-spacing: 1px;
+            outline:        none;
+            box-sizing:     border-box;
+            caret-color:    rgba(220,220,225,0.7);
+            transition:     border-color 0.2s, background 0.2s, box-shadow 0.2s;
+        }
+        #vcl-input::placeholder { color: rgba(180,180,185,0.28); letter-spacing: 0; }
+        #vcl-input:focus {
+            background:   rgba(100,100,105,0.24);
+            border-color: rgba(190,190,195,0.32);
+            box-shadow:   0 0 0 3px rgba(180,180,185,0.06), 0 8px 28px rgba(0,0,0,0.4);
+        }
+        #vcl-input.vcl-err {
+            border-color: rgba(255,110,110,0.5);
+            box-shadow:   0 0 0 3px rgba(255,90,90,0.08);
+            animation:    vcl-shake 0.34s ease;
+        }
+
+        #vcl-submit {
+            position:      absolute;
+            right:         10px;
+            top:           50%;
+            transform:     translateY(-50%);
+            background:    none;
+            border:        none;
+            color:         rgba(190,190,195,0.3);
+            font-size:     12px;
+            cursor:        pointer;
+            padding:       6px 8px;
+            border-radius: 8px;
+            transition:    color 0.18s, background 0.18s;
+            line-height:   1;
+        }
+        #vcl-submit:hover { color: rgba(230,230,232,0.75); background: rgba(180,180,185,0.1); }
+
+        /* ── pin (numeric / mobile) mode ── */
+
+        #vcl-pin-dots {
+            display:    flex;
+            gap:        16px;
+            margin-bottom: 34px;
+            animation:  vcl-up 0.42s cubic-bezier(0.22,1,0.36,1) 0.13s both;
+        }
+        .vcl-dot {
+            width:         13px;
+            height:        13px;
+            border-radius: 50%;
+            border:        1.5px solid rgba(200,200,205,0.4);
+            background:    transparent;
+            transition:    background 0.15s, transform 0.15s;
+        }
+        .vcl-dot.vcl-filled {
+            background: rgba(225,225,228,0.85);
+            transform:  scale(1.05);
+        }
+        #vcl-pin-dots.vcl-err { animation: vcl-shake 0.34s ease; }
+        #vcl-pin-dots.vcl-err .vcl-dot { border-color: rgba(255,110,110,0.6); }
+        #vcl-pin-dots.vcl-err .vcl-dot.vcl-filled { background: rgba(255,120,120,0.85); }
+
+        #vcl-keypad {
+            display:               grid;
+            grid-template-columns: repeat(3, 68px);
+            gap:                   16px;
+            animation:             vcl-up 0.42s cubic-bezier(0.22,1,0.36,1) 0.17s both;
+        }
+        .vcl-key {
+            width:          68px;
+            height:         68px;
+            border-radius:  50%;
+            border:         1px solid rgba(170,170,175,0.14);
+            background:     rgba(90,90,95,0.16);
+            color:          rgba(230,230,232,0.88);
+            font-size:      22px;
+            font-family:    'gg sans','Noto Sans',system-ui,sans-serif;
+            font-weight:    500;
+            cursor:         pointer;
+            display:        flex;
+            align-items:    center;
+            justify-content: center;
+            transition:     background 0.15s, transform 0.1s, border-color 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .vcl-key:hover  { background: rgba(120,120,125,0.22); border-color: rgba(190,190,195,0.24); }
+        .vcl-key:active { transform: scale(0.93); background: rgba(140,140,145,0.28); }
+        .vcl-key-back  { font-size: 17px; }
+        .vcl-key-clear { font-size: 16px; font-weight: 700; color: rgba(230,230,232,0.55); }
+
+        /* ── shared ── */
+
+        #vcl-error {
+            display:     none;
+            width:       280px;
+            margin-top:  10px;
+            font-family: 'gg sans','Noto Sans',system-ui,sans-serif;
+            font-size:   12.5px;
+            color:       rgba(255,130,130,0.9);
+            align-items: center;
+            justify-content: center;
+            gap:         6px;
+        }
+        #vcl-error.vcl-show { display: flex; }
+
+        @keyframes vcl-up {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0);    }
+        }
+        @keyframes vcl-shake {
+            0%,100% { transform: translateX(0);   }
+            20%,60% { transform: translateX(-6px); }
+            40%,80% { transform: translateX(6px);  }
+        }
+    `;
+    document.head.appendChild(st);
+}
+
+// ─── Overlay: text (alnum) mode ────────────────────────────────────────
+
+function createTextModeOverlay(avatarUrl: string, username: string) {
+    overlay!.innerHTML = `
+        <div id="vcl-avatar" style="background-image:url('${escapeHtml(avatarUrl)}')"></div>
+        <p id="vcl-username">${escapeHtml(username)}</p>
+        <p id="vcl-sub">Enter password to unlock</p>
+
+        <div id="vcl-input-wrap">
+            <i class="fa-solid fa-lock vcl-icon-lock"></i>
+            <input id="vcl-input" type="password" placeholder="Password" autocomplete="off" spellcheck="false" />
+            <button id="vcl-submit"><i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+
+        <div id="vcl-error">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="vcl-error-msg"></span>
+        </div>
+    `;
+
+    const input = overlay!.querySelector<HTMLInputElement>("#vcl-input")!;
+    const submitBtn = overlay!.querySelector<HTMLButtonElement>("#vcl-submit")!;
+    const errorBox = overlay!.querySelector<HTMLDivElement>("#vcl-error")!;
+    const errorMsg = overlay!.querySelector<HTMLSpanElement>("#vcl-error-msg")!;
+
+    let attempts = 0;
+    let lockUntil = 0;
+
+    function showError(msg: string) {
+        input.classList.add("vcl-err");
+        errorMsg.textContent = msg;
+        errorBox.classList.add("vcl-show");
+        setTimeout(() => {
+            input.classList.remove("vcl-err");
+            errorBox.classList.remove("vcl-show");
+            input.value = "";
+            input.focus();
+        }, 2800);
+    }
+
+    function tryUnlock() {
+        const now = Date.now();
+        if (now < lockUntil) {
+            showError(`Too many attempts — wait ${Math.ceil((lockUntil - now) / 1000)}s`);
+            return;
+        }
+        if (input.value === settings.store.password) { unlock(); return; }
+
+        attempts++;
+        if (attempts >= 5) {
+            lockUntil = Date.now() + 15_000;
+            attempts = 0;
+            showError("Too many attempts — locked for 15s");
+        } else {
+            showError(`Wrong password (${attempts} / 5)`);
+        }
+    }
+
+    submitBtn.addEventListener("click", tryUnlock);
+    input.addEventListener("keydown", e => {
+        if (e.key === "Enter") { e.preventDefault(); tryUnlock(); }
+        e.stopPropagation();
+    });
+
+    setTimeout(() => requestAnimationFrame(() => input.focus()), 140);
+}
+
+// ─── Overlay: pin (numeric / mobile) mode ──────────────────────────────
+
+function createPinModeOverlay(avatarUrl: string, username: string) {
+    const targetLen = getPinLength();
+
+    overlay!.innerHTML = `
+        <div id="vcl-avatar" style="background-image:url('${escapeHtml(avatarUrl)}')"></div>
+        <p id="vcl-username">${escapeHtml(username)}</p>
+        <p id="vcl-sub">Enter passcode to unlock</p>
+
+        <div id="vcl-pin-dots"></div>
+
+        <div id="vcl-error">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="vcl-error-msg"></span>
+        </div>
+
+        <div id="vcl-keypad">
+            <button class="vcl-key" data-d="1">1</button>
+            <button class="vcl-key" data-d="2">2</button>
+            <button class="vcl-key" data-d="3">3</button>
+            <button class="vcl-key" data-d="4">4</button>
+            <button class="vcl-key" data-d="5">5</button>
+            <button class="vcl-key" data-d="6">6</button>
+            <button class="vcl-key" data-d="7">7</button>
+            <button class="vcl-key" data-d="8">8</button>
+            <button class="vcl-key" data-d="9">9</button>
+            <button class="vcl-key vcl-key-clear" id="vcl-key-clear">C</button>
+            <button class="vcl-key" data-d="0">0</button>
+            <button class="vcl-key vcl-key-back" id="vcl-key-back"><i class="fa-solid fa-delete-left"></i></button>
+        </div>
+    `;
+
+    const dotsWrap = overlay!.querySelector<HTMLDivElement>("#vcl-pin-dots")!;
+    const errorBox = overlay!.querySelector<HTMLDivElement>("#vcl-error")!;
+    const errorMsg = overlay!.querySelector<HTMLSpanElement>("#vcl-error-msg")!;
+    const backBtn = overlay!.querySelector<HTMLButtonElement>("#vcl-key-back")!;
+    const clearBtn = overlay!.querySelector<HTMLButtonElement>("#vcl-key-clear")!;
+
+    for (let i = 0; i < targetLen; i++) {
+        const dot = document.createElement("div");
+        dot.className = "vcl-dot";
+        dotsWrap.appendChild(dot);
+    }
+
+    let buffer = "";
+    let attempts = 0;
+    let lockUntil = 0;
+    let busy = false;
+
+    function renderDots() {
+        const dots = dotsWrap.querySelectorAll<HTMLDivElement>(".vcl-dot");
+        dots.forEach((d, i) => d.classList.toggle("vcl-filled", i < buffer.length));
+    }
+
+    function showError(msg: string) {
+        busy = true;
+        errorMsg.textContent = msg;
+        errorBox.classList.add("vcl-show");
+        dotsWrap.classList.add("vcl-err");
+        setTimeout(() => {
+            errorBox.classList.remove("vcl-show");
+            dotsWrap.classList.remove("vcl-err");
+            buffer = "";
+            renderDots();
+            busy = false;
+        }, 900);
+    }
+
+    function submitIfReady() {
+        if (buffer.length < targetLen) return;
+
+        const now = Date.now();
+        if (now < lockUntil) {
+            showError(`Too many attempts — wait ${Math.ceil((lockUntil - now) / 1000)}s`);
+            return;
+        }
+
+        if (buffer === settings.store.password) { unlock(); return; }
+
+        attempts++;
+        if (attempts >= 5) {
+            lockUntil = Date.now() + 15_000;
+            attempts = 0;
+            showError("Too many attempts — locked for 15s");
+        } else {
+            showError("Wrong passcode");
+        }
+    }
+
+    function pressDigit(d: string) {
+        if (busy || Date.now() < lockUntil) return;
+        if (buffer.length >= targetLen) return;
+        buffer += d;
+        renderDots();
+        if (buffer.length === targetLen) setTimeout(submitIfReady, 120);
+    }
+
+    function pressBackspace() {
+        if (busy) return;
+        buffer = buffer.slice(0, -1);
+        renderDots();
+    }
+
+    function pressClear() {
+        if (busy) return;
+        buffer = "";
+        renderDots();
+    }
+
+    overlay!.querySelectorAll<HTMLButtonElement>(".vcl-key[data-d]").forEach(btn => {
+        btn.addEventListener("click", () => pressDigit(btn.dataset.d!));
+    });
+    backBtn.addEventListener("click", pressBackspace);
+    clearBtn.addEventListener("click", pressClear);
+
+    (overlay as any)._pinKeydown = (e: KeyboardEvent) => {
+        if (/^[0-9]$/.test(e.key)) { e.preventDefault(); pressDigit(e.key); }
+        else if (e.key === "Backspace") { e.preventDefault(); pressBackspace(); }
+        else if (e.key === "Escape" || e.key.toLowerCase() === "c") { e.preventDefault(); pressClear(); }
+    };
+    document.addEventListener("keydown", (overlay as any)._pinKeydown, true);
+}
+
+// ─── Overlay ──────────────────────────────────────────────────────────
+
+function createOverlay() {
+    injectStyles(settings.store.blurAmount ?? 18);
+
+    const { avatarUrl, username } = getUserAssets();
+
+    overlay = document.createElement("div");
+    overlay.id = OVERLAY_ID;
+    document.body.appendChild(overlay);
+
+    if (settings.store.passwordType === "numeric") {
+        createPinModeOverlay(avatarUrl, username);
+    } else {
+        createTextModeOverlay(avatarUrl, username);
+    }
+
+    // Block devtools shortcuts while locked (cosmetic deterrent only, not real security)
+    keyGuard = (e: KeyboardEvent) => {
+        const input = overlay?.querySelector<HTMLInputElement>("#vcl-input");
+        if (input && e.target === input) return;
+        const blocked =
+            e.key === "F12" ||
+            (e.ctrlKey && e.shiftKey && ["I", "J", "C", "K"].includes(e.key)) ||
+            (e.ctrlKey && e.key === "U");
+        if (blocked) { e.preventDefault(); e.stopImmediatePropagation(); }
+    };
+    document.addEventListener("keydown", keyGuard, true);
+
+    focusGuard = (e: FocusEvent) => {
+        if (!overlay || overlay.contains(e.target as Node)) return;
+        e.stopImmediatePropagation();
+        if (settings.store.passwordType !== "numeric") focusInput();
+    };
+    document.addEventListener("focusin", focusGuard, true);
+
+    overlay.addEventListener("contextmenu", e => {
+        const input = overlay?.querySelector<HTMLInputElement>("#vcl-input");
+        if (e.target !== input) e.preventDefault();
+    });
+    overlay.addEventListener("mousedown", e => {
+        if (e.target === overlay && settings.store.passwordType !== "numeric") {
+            e.preventDefault();
+            focusInput();
+        }
+    });
+
+    domObserver = new MutationObserver(() => {
+        if (!document.getElementById(OVERLAY_ID) && overlay) {
+            document.body.appendChild(overlay);
+            bringOverlayToFront();
+            return;
+        }
+        bringOverlayToFront();
+    });
+    domObserver.observe(document.body, { childList: true });
+}
+
+// ─── Plugin ───────────────────────────────────────────────────────────
 
 export default definePlugin({
-    name: "PasscodeLock",
-    description: "Protect Discord from casual access with a local passcode lock screen.",
+    name: "DiscordLock",
+    description: "Locks Discord with a password after inactivity or via a custom shortcut, with adjustable blur and lock style.",
+    tags: ["Privacy", "Utility"],
     authors: [Devs.phklie],
     settings,
 
     start() {
-        document.addEventListener("keydown", onGlobalKeyDown, true);
-        window.addEventListener("blur", onWindowBlur);
-        window.addEventListener("focus", onWindowFocus);
-
-
-        if (settings.store.hash && (settings.store.locked || settings.store.lockOnStartup)) {
-            window.setTimeout(lock, 250);
-        }
+        bindActivity();
+        bindShortcut();
     },
 
     stop() {
-        document.removeEventListener("keydown", onGlobalKeyDown, true);
-        window.removeEventListener("blur", onWindowBlur);
-        window.removeEventListener("focus", onWindowFocus);
-        window.clearTimeout(autoLockTimer);
-        unlock();
-    }
+        unbindActivity();
+        unbindShortcut();
+
+        domObserver?.disconnect();
+        domObserver = null;
+
+        if (keyGuard) { document.removeEventListener("keydown", keyGuard, true); keyGuard = null; }
+        if (focusGuard) { document.removeEventListener("focusin", focusGuard, true); focusGuard = null; }
+        if (overlay && (overlay as any)._pinKeydown) {
+            document.removeEventListener("keydown", (overlay as any)._pinKeydown, true);
+        }
+
+        overlay?.remove();
+        overlay = null;
+
+        document.getElementById("vcl-styles")?.remove();
+        document.getElementById("vcl-fa")?.remove();
+    },
 });
