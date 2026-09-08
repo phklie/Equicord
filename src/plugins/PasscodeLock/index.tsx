@@ -6,8 +6,8 @@
 
 import { definePluginSettings } from "@api/Settings";
 import definePlugin, { OptionType } from "@utils/types";
-import { Forms, IconUtils, React, showToast, Toasts, UserStore } from "@webpack/common";
 import { Devs } from "@utils/constants";
+import { Forms, IconUtils, React, showToast, Toasts, UserStore } from "@webpack/common";
 
 const OVERLAY_ID = "vcl-overlay";
 
@@ -138,6 +138,7 @@ let keyGuard: ((e: KeyboardEvent) => void) | null = null;
 let focusGuard: ((e: FocusEvent) => void) | null = null;
 let inactiveTimer: ReturnType<typeof setTimeout> | null = null;
 let shortcutListener: ((e: KeyboardEvent) => void) | null = null;
+let loadLockListener: (() => void) | null = null;
 
 const ACTIVITY_EVENTS = ["mousemove", "mousedown", "keydown", "scroll", "touchstart"] as const;
 
@@ -736,11 +737,25 @@ export default definePlugin({
     start() {
         bindActivity();
         bindShortcut();
+
+        if (settings.store.password) {
+            if (document.readyState === "complete") {
+                lock();
+            } else {
+                loadLockListener = () => lock();
+                window.addEventListener("load", loadLockListener, { once: true });
+            }
+        }
     },
 
     stop() {
         unbindActivity();
         unbindShortcut();
+
+        if (loadLockListener) {
+            window.removeEventListener("load", loadLockListener);
+            loadLockListener = null;
+        }
 
         domObserver?.disconnect();
         domObserver = null;
