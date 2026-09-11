@@ -201,7 +201,6 @@ function SettingsAboutComponent() {
 export default definePlugin({
     name: "Zzz",
     description: "custom sync line to divide the api",
-    required: true,
     authors: [Devs.vv],
     patches: [
         {
