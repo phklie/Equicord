@@ -1,4 +1,3 @@
-
 import { Logger } from "@utils/Logger";
 import definePlugin from "@utils/types";
 import { Message } from "@vencord/discord-types";
@@ -19,10 +18,12 @@ const GiftActions = findByPropsLazy("redeemGiftCode");
 let startTime = 0;
 let claiming = false;
 const claimQueue: ClaimRequest[] = [];
+const seenCodes = new Set<string>();
 
 function resetState() {
     startTime = Date.now();
     claimQueue.length = 0;
+    seenCodes.clear();
     claiming = false;
 }
 
@@ -38,10 +39,6 @@ function shouldSkipMessage(message: Message) {
     return settings.store.ignoreOwnGiftLinks && isOwnMessage(message);
 }
 
-function isMessageOlderThanStart(message: Message) {
-    return new Date(message.timestamp).getTime() < startTime;
-}
-
 function extractGiftCode(content: string) {
     return content.match(GIFT_LINK_REGEX)?.[1] ?? null;
 }
@@ -49,6 +46,9 @@ function extractGiftCode(content: string) {
 function createClaimRequest(message: Message): ClaimRequest | null {
     const code = message.content ? extractGiftCode(message.content) : null;
     if (!code) return null;
+
+    if (seenCodes.has(code)) return null;
+    seenCodes.add(code);
 
     const authorId = message.author?.id;
     const authorAvatar = message.author?.avatar;
@@ -83,16 +83,23 @@ function continueQueue() {
     processQueue();
 }
 
-function handleClaimSuccess(request: ClaimRequest, giftType: Promise<string | null>) {
-    logger.log(`Successfully redeemed code: ${request.code}`);
-    void giftType.then(type => notifyClaim("claimed", request, type));
-    continueQueue();
-}
+function redeem(request: ClaimRequest) {
+    const wantWebhook = settings.store.webhookUrl.trim().length > 0;
+    const giftType = wantWebhook ? resolveGiftType(request.code) : Promise.resolve(null);
 
-function handleClaimFailure(request: ClaimRequest, error: Error, giftType: Promise<string | null>) {
-    logger.error(`Failed to redeem code: ${request.code}`, error);
-    void giftType.then(type => notifyClaim("failed", request, type));
-    continueQueue();
+    GiftActions.redeemGiftCode({
+        code: request.code,
+        onRedeemed: () => {
+            logger.log(`Successfully redeemed code: ${request.code}`);
+            if (wantWebhook) void giftType.then(type => notifyClaim("claimed", request, type));
+            continueQueue();
+        },
+        onError: (error: unknown) => {
+            logger.error(`Failed to redeem code: ${request.code}`, toError(error));
+            if (wantWebhook) void giftType.then(type => notifyClaim("failed", request, type));
+            continueQueue();
+        }
+    });
 }
 
 function processQueue() {
@@ -102,15 +109,7 @@ function processQueue() {
     if (!request) return;
 
     claiming = true;
-    const giftType = settings.store.webhookUrl.trim()
-        ? resolveGiftType(request.code)
-        : Promise.resolve(null);
-
-    GiftActions.redeemGiftCode({
-        code: request.code,
-        onRedeemed: () => handleClaimSuccess(request, giftType),
-        onError: (error: unknown) => handleClaimFailure(request, toError(error), giftType)
-    });
+    redeem(request);
 }
 
 export default definePlugin({
@@ -127,13 +126,19 @@ export default definePlugin({
 
     flux: {
         MESSAGE_CREATE({ message }: { message: Message; }) {
-            if (!message.content || shouldSkipMessage(message) || isMessageOlderThanStart(message)) return;
+            if (!message.content) return;
+            if (message.timestamp && new Date(message.timestamp).getTime() < startTime) return;
+            if (shouldSkipMessage(message)) return;
 
             const request = createClaimRequest(message);
             if (!request) return;
 
-            claimQueue.push(request);
-            processQueue();
+            if (!claiming) {
+                claiming = true;
+                redeem(request);
+            } else {
+                claimQueue.push(request);
+            }
         }
     }
 });
