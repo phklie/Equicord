@@ -59,11 +59,21 @@ export function useUserDecorAvatarDecoration(user?: User): AvatarDecoration | nu
         user ? remoteDecorations[user.id] ?? null : null
     );
 
-    useEffect(() => {
-        if (!user) return;
-        const asset = remoteDecorations[user.id] ?? null;
-        setDecoration(asset);
-    }, [user?.id]);
+        useEffect(() => {
+            const destructor = (() => {
+                try {
+                    return useUsersDecorationsStore.subscribe(
+                        state => {
+                            if (!user) return;
+                            const newDecorAvatarDecoration = state.getAsset(user.id);
+                            if (newDecorAvatarDecoration === undefined) return;
+                            setDecorAvatarDecoration(newDecorAvatarDecoration);
+                        }
+                    );
+                } catch {
+                    return () => { };
+                }
+            })();
 
     return decoration ? { asset: decoration, skuId: RAW_SKU_ID } : null;
 }
