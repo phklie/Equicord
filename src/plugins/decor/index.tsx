@@ -7,7 +7,6 @@
 import "./ui/styles.css";
 
 import ErrorBoundary from "@components/ErrorBoundary";
-import { get } from "@api/DataStore";
 import { Devs } from "@utils/constants";
 import definePlugin from "@utils/types";
 import { User } from "@vencord/discord-types";
@@ -26,34 +25,6 @@ export interface AvatarDecoration {
     skuId: string;
 }
 
-let intervalId: any;
-let lastModified = "";
-
-const DATABASE_URL = "https://raw.githubusercontent.com/ryanlosing/pfp/main/decorations.json";
-
-async function fetchDecorations(noCache = false) {
-    const modified = await fetch(DATABASE_URL, { method: "HEAD", cache: "no-cache" })
-        .then(res => res.headers.get("last-modified"))
-        .catch(() => null);
-
-    if (!noCache && modified && modified === lastModified) return;
-    if (modified) lastModified = modified;
-
-    const init = {} as RequestInit;
-    if (noCache) init.cache = "no-cache";
-
-    await fetch(DATABASE_URL, init)
-        .then(res => res.ok && res.json())
-        .then(remote => {
-            if (remote?.decorations) {
-                for (const userId of Object.keys(remote.decorations)) {
-                    useUsersDecorationsStore.getState().fetch(userId);
-                }
-            }
-        })
-        .catch(() => null);
-}
-
 export default definePlugin({
     name: "Decor",
     description: "Create and use your own custom avatar decorations, or pick your favorite from the presets.",
@@ -61,6 +32,7 @@ export default definePlugin({
     authors: [Devs.FieryFlames],
     isModified: true,
     patches: [
+        // Patch MediaResolver to return correct URL for Decor avatar decorations
         {
             find: "getAvatarDecorationURL:",
             replacement: {
@@ -68,6 +40,7 @@ export default definePlugin({
                 replace: "const vcDecorDecoration=$self.getDecorAvatarDecorationURL($1);if(vcDecorDecoration)return vcDecorDecoration;"
             }
         },
+        // Patch profile customization settings to include Decor section
         {
             find: "DefaultCustomizationSections",
             replacement: {
@@ -75,6 +48,7 @@ export default definePlugin({
                 replace: "$self.DecorSection(),"
             }
         },
+        // Decoration modal module
         {
             find: "80,onlyAnimateOnHoverOrFocus:!",
             replacement: [
@@ -86,6 +60,7 @@ export default definePlugin({
                     match: /(?<=(?:(\i)=)?)(?:\i=>|function (\i)\(\i\)){let{user:\i,avatarDecoration/,
                     replace: (m, arrowFunctionName, functionName) => `$self.DecorationGridDecoration=${arrowFunctionName ?? functionName}${arrowFunctionName ? "" : ";"}${m}`,
                 },
+                // Remove NEW label from decor avatar decorations
                 {
                     match: /(?<=\i\.PURCHASE)(?=,)(?<=avatarDecoration:(\i).+?)/,
                     replace: "||$1.skuId===$self.SKU_ID"
@@ -96,23 +71,28 @@ export default definePlugin({
             find: "isAvatarDecorationAnimating:",
             group: true,
             replacement: [
+                // Add Decor avatar decoration hook to avatar decoration hook
                 {
                     match: /(?<=\.avatarDecoration,guildId:\i\}\)\),)(?<=user:(\i).+?)/,
                     replace: "vcDecorAvatarDecoration=$self.useUserDecorAvatarDecoration($1),"
                 },
+                // Use added hook
                 {
                     match: /(?<={avatarDecoration:).{1,20}?(?=,)(?<=avatarDecorationOverride:(\i).+?)/,
                     replace: "$1??vcDecorAvatarDecoration??($&)"
                 },
+                // Make memo depend on added hook
                 {
                     match: /(?<=size:\i}\),\[)/,
                     replace: "vcDecorAvatarDecoration,"
                 }
             ]
         },
+        // Current user area, at bottom of channels/dm list
         {
             find: "#{intl::USER_PROFILE_ACCOUNT_POPOUT_BUTTON_A11Y_LABEL}",
             replacement: [
+                // Use Decor avatar decoration hook
                 {
                     match: /(?<=\i\)\({avatarDecoration:)\i(?=,)(?<=currentUser:(\i).+?)/,
                     replace: "$self.useUserDecorAvatarDecoration($1)??$&"
@@ -129,6 +109,7 @@ export default definePlugin({
                 replace: "$self.useUserDecorAvatarDecoration($2)??$1"
             }
         })),
+        // Patch avatar decoration preview to display Decor avatar decorations as if they are purchased
         {
             find: "#{intl::PREMIUM_UPSELL_PROFILE_AVATAR_DECO_INLINE_UPSELL_DESCRIPTION}",
             replacement: [
@@ -160,10 +141,12 @@ export default definePlugin({
 
     flux: {
         CONNECTION_OPEN: () => {
-            useUsersDecorationsStore.getState().fetch(UserStore.getCurrentUser().id);
+            useAuthorizationStore.getState().init();
+            useCurrentUserDecorationsStore.getState().clear();
+            useUsersDecorationsStore.getState().fetch(UserStore.getCurrentUser().id, true);
         },
         USER_PROFILE_MODAL_OPEN: data => {
-            useUsersDecorationsStore.getState().fetch(data.userId);
+            useUsersDecorationsStore.getState().fetch(data.userId, true);
         },
     },
 
@@ -190,18 +173,15 @@ export default definePlugin({
     },
 
     async start() {
-        await fetchDecorations();
-        clearInterval(intervalId);
-        intervalId = setInterval(() => fetchDecorations(), 1000 * 60 * 5);
-    },
-
-    stop() {
-        clearInterval(intervalId);
+        await setBaseUrl(settings.store.baseUrl);
+        useUsersDecorationsStore.getState().fetch(UserStore.getCurrentUser().id, true);
     },
 
     getDecorAvatarDecorationURL({ avatarDecoration, canAnimate }: { avatarDecoration: AvatarDecoration | null; canAnimate?: boolean; }) {
+        // Only Decor avatar decorations have this SKU ID
         if (avatarDecoration?.skuId === SKU_ID) {
             const parts = avatarDecoration.asset.split("_");
+            // Remove a_ prefix if it's animated and animation is disabled
             if (avatarDecoration.asset.startsWith("a_") && !canAnimate) parts.shift();
             return `${CDN_URL}/${parts.join("_")}.png`;
         } else if (avatarDecoration?.skuId === RAW_SKU_ID) {
@@ -210,11 +190,8 @@ export default definePlugin({
     },
 
     DecorSection: ErrorBoundary.wrap(DecorSection, { noop: true }),
-
-    toolboxActions: {
-        "Refresh Decorations": async () => {
-            await fetchDecorations(true);
-            showToast("Decor: Decorations refreshed!", Toasts.Type.SUCCESS);
-        }
-    }
+    ExperimentDecorSection: ErrorBoundary.wrap(
+        (props: DecorSectionProps) => <DecorSection {...props} useNewSection />,
+        { noop: true }
+    ),
 });
