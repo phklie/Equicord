@@ -7,7 +7,7 @@
 import { definePluginSettings } from "@api/Settings";
 import definePlugin, { OptionType } from "@utils/types";
 import { Devs } from "@utils/constants";
-import { Forms, IconUtils, React, showToast, Toasts, UserStore } from "@webpack/common";
+import { Forms, IconUtils, React, showToast, UserStore } from "@webpack/common";
 
 const OVERLAY_ID = "vcl-overlay";
 
@@ -201,11 +201,11 @@ function unbindShortcut() {
 
 function lock() {
     if (!settings.store.password) {
-        showToast("Set an unlock password in DiscordLock settings first", Toasts.Type.FAILURE);
+        showToast("Set an unlock password in DiscordLock settings first", showToast.Type.FAILURE);
         return;
     }
     if (settings.store.passwordType === "numeric" && settings.store.password.length !== getPinLength()) {
-        showToast(`Your password must be exactly ${getPinLength()} digits — check DiscordLock settings`, Toasts.Type.FAILURE);
+        showToast(`Your password must be exactly ${getPinLength()} digits — check DiscordLock settings`, showToast.Type.FAILURE);
         return;
     }
     unbindActivity();

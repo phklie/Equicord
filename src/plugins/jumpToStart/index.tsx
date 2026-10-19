@@ -8,7 +8,7 @@ import { NavContextMenuPatchCallback } from "@api/ContextMenu";
 import { Devs } from "@utils/constants";
 import definePlugin from "@utils/types";
 import { Channel, Message, User } from "@vencord/discord-types";
-import { Constants, Menu, NavigationRouter, RestAPI, SelectedChannelStore, SelectedGuildStore, Toasts } from "@webpack/common";
+import { Constants, Menu, NavigationRouter, RestAPI, SelectedChannelStore, SelectedGuildStore, showToast } from "@webpack/common";
 
 function jumpToFirstMessage(channelId: string, guildId?: string | null) {
     const url = `/channels/${guildId ?? "@me"}/${channelId}/0`;
@@ -42,10 +42,10 @@ async function jumpToUserMessage(channelId: string, guildId: string, userId: str
 
         const messageId = res.body?.messages?.[0]?.[0]?.id;
         if (!messageId) {
-            Toasts.show({
-                type: Toasts.Type.FAILURE,
+            showToast.show({
+                type: showToast.Type.FAILURE,
                 message: "No messages found from this user in this channel.",
-                id: Toasts.genId()
+                id: showToast.genId()
             });
             return;
         }
@@ -53,10 +53,10 @@ async function jumpToUserMessage(channelId: string, guildId: string, userId: str
         const url = `/channels/${guildId}/${channelId}/${messageId}`;
         NavigationRouter.transitionTo(url);
     } catch (e) {
-        Toasts.show({
-            type: Toasts.Type.FAILURE,
+        showToast.show({
+            type: showToast.Type.FAILURE,
             message: "Failed to search for messages.",
-            id: Toasts.genId()
+            id: showToast.genId()
         });
     }
 }

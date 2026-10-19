@@ -22,7 +22,7 @@ import { Devs } from "@utils/constants";
 import definePlugin from "@utils/types";
 import { RelationshipType } from "@vencord/discord-types/enums";
 import { find, filters } from "@webpack";
-import { ChannelStore, FluxDispatcher, GuildMemberStore, Menu, React, RelationshipStore, Toasts, UserStore, UserUtils } from "@webpack/common";
+import { ChannelStore, FluxDispatcher, GuildMemberStore, Menu, React, RelationshipStore, showToast, UserStore, UserUtils } from "@webpack/common";
 
 function t(str: string): string {
     return str;
@@ -558,7 +558,7 @@ async function fetchAllGuildMembers(guildId: string): Promise<void> {
     await new Promise(r => setTimeout(r, 1000));
 
     const after = (GuildMemberStore.getMemberIds(guildId) as string[]).length;
-    Toasts.show({ message: t("{count} members available").replace("{count}", after.toString()), type: Toasts.Type.SUCCESS, id: Toasts.genId() });
+    showToast.show({ message: t("{count} members available").replace("{count}", after.toString()), type: showToast.Type.SUCCESS, id: showToast.genId() });
 }
 
 function getGuildCandidates(guildId: string): string[] {
@@ -578,12 +578,12 @@ function getGuildCandidates(guildId: string): string[] {
 
 // ── Fake Friend Request avec saisie du nombre ─────────────────────────────────
 async function floodGuild(guildId: string) {
-    Toasts.show({ message: t("Loading members..."), type: Toasts.Type.MESSAGE, id: "ff-loading" });
+    showToast.show({ message: t("Loading members..."), type: showToast.Type.MESSAGE, id: "ff-loading" });
     await fetchAllGuildMembers(guildId);
 
     const candidates = getGuildCandidates(guildId);
     if (!candidates.length) {
-        Toasts.show({ message: t("No candidates available"), type: Toasts.Type.FAILURE, id: Toasts.genId() });
+        showToast.show({ message: t("No candidates available"), type: showToast.Type.FAILURE, id: showToast.genId() });
         return;
     }
 
@@ -606,7 +606,7 @@ async function floodGuild(guildId: string) {
         }
         await new Promise(r => setTimeout(r, 15));
     }
-    Toasts.show({ message: t("{count} fake friend request(s) sent!").replace("{count}", sent.toString()), type: Toasts.Type.SUCCESS, id: Toasts.genId() });
+    showToast.show({ message: t("{count} fake friend request(s) sent!").replace("{count}", sent.toString()), type: showToast.Type.SUCCESS, id: showToast.genId() });
 }
 
 // ── Remove fake requests pour un serveur ──────────────────────────────────────
@@ -615,7 +615,7 @@ async function removeFakeFriendsForGuild(guildId: string) {
     const toRemove = [...fakeState.keys()].filter(id => memberIds.has(id));
 
     if (!toRemove.length) {
-        Toasts.show({ message: t("No fake requests to remove for this server"), type: Toasts.Type.MESSAGE, id: Toasts.genId() });
+        showToast.show({ message: t("No fake requests to remove for this server"), type: showToast.Type.MESSAGE, id: showToast.genId() });
         return;
     }
 
@@ -630,14 +630,14 @@ async function removeFakeFriendsForGuild(guildId: string) {
         }
     }
     await persistState();
-    Toasts.show({ message: t("{count} fake request(s) removed!").replace("{count}", toRemove.length.toString()), type: Toasts.Type.SUCCESS, id: Toasts.genId() });
+    showToast.show({ message: t("{count} fake request(s) removed!").replace("{count}", toRemove.length.toString()), type: showToast.Type.SUCCESS, id: showToast.genId() });
 }
 
 // ── Fake Message Request ─────────────────────────────────────────────────────
 async function fakeMessageRequestGuild(guildId: string) {
     const candidates = getGuildCandidates(guildId);
     if (!candidates.length) {
-        Toasts.show({ message: t("No candidates available"), type: Toasts.Type.FAILURE, id: Toasts.genId() });
+        showToast.show({ message: t("No candidates available"), type: showToast.Type.FAILURE, id: showToast.genId() });
         return;
     }
 
@@ -659,10 +659,10 @@ async function fakeMessageRequestGuild(guildId: string) {
         await new Promise(r => setTimeout(r, 60));
     }
 
-    Toasts.show({
+    showToast.show({
         message: t("{count} message request(s) received!").replace("{count}", sent.toString()),
-        type: sent > 0 ? Toasts.Type.SUCCESS : Toasts.Type.FAILURE,
-        id: Toasts.genId()
+        type: sent > 0 ? showToast.Type.SUCCESS : showToast.Type.FAILURE,
+        id: showToast.genId()
     });
 }
 

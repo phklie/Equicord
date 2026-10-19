@@ -8,7 +8,7 @@ import { definePluginSettings } from "@api/Settings";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
 import { findByPropsLazy, findStoreLazy } from "@webpack";
-import { Menu, RestAPI, SelectedChannelStore, Toasts, UserStore } from "@webpack/common";
+import { Menu, RestAPI, SelectedChannelStore, showToast, UserStore } from "@webpack/common";
 
 const VoiceStateStore: VoiceStateStore = findStoreLazy("VoiceStateStore");
 const ChannelActions: {
