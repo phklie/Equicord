@@ -853,7 +853,7 @@ let timer: ReturnType<typeof setInterval> | undefined;
 let startTimeout: ReturnType<typeof setTimeout> | undefined;
 
 export default definePlugin({
-    name: "CommitNotifier",
+    name: "UpdateNotifier",
     description: "Notifies you when the watched repository has a new commit and lets you update from a popup",
     authors: [Devs.phklie],
     required: true,
