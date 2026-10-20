@@ -27,7 +27,7 @@ const settings = definePluginSettings({
     intervalMinutes: {
         type: OptionType.NUMBER,
         description: "Minutes between checks (minimum 5)",
-        default: 10
+        default: 20
     },
     checkOnStart: {
         type: OptionType.BOOLEAN,
