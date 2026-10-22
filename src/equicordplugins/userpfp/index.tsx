@@ -123,7 +123,7 @@ function scheduleNext() {
 
 export default definePlugin({
     name: "UserPFP",
-    description: "Allows you to set local static or animated avatars for yourself and other users (database by ryanlosing)",
+    description: "Allows you to set local static or animated avatars for yourself and other users",
     tags: ["Appearance", "Customisation", "Servers"],
     authors: [EquicordDevs.nexpid, Devs.thororen, EquicordDevs.soapphia, EquicordDevs.sketchmyname],
     settings,
@@ -134,7 +134,7 @@ export default definePlugin({
                 Using the set avatar feature is local only meaning only you see it change.
             </Notice.Info>
             <Notice.Info className={Margins.bottom8}>
-                Avatar database and images provided by ryanlosing.
+                Avatar database and images provided .
             </Notice.Info>
             <Flex className={cl("settings")}>
                 <Button
