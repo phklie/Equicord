@@ -49,7 +49,7 @@ const settings = definePluginSettings({
         ],
     },
     databaseSource: {
-        description: "URL to load database from (ryanlosing's database by default)",
+        description: "URL to load database",
         type: OptionType.STRING,
         default: CUSTOM_DB_URL,
         hidden: true,
