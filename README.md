@@ -1,7 +1,7 @@
 # [<img src="./browser/icon.png" width="40" align="left" alt="Equicord">](https://github.com/Equicord/Equicord) Equicord
 
 [![Equibop](https://img.shields.io/badge/Equibop-grey?style=flat)](https://github.com/Equicord/Equibop)
-[![Tests](https://github.com/Equicord/Equicord/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/Equicord/Equicord/actions/workflows/test.yml)
+[![Tests](https://github.com/phklie/Equicord/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/phklie/Equicord/actions/workflows/test.yml)
 [![Discord](https://img.shields.io/discord/1173279886065029291.svg?color=768AD4&label=Discord&logo=discord&logoColor=white)](https://equicord.org/discord)
 
 Equicord is a fork of [Vencord](https://github.com/Vendicated/Vencord), with over 300+ plugins.
@@ -18,15 +18,15 @@ Windows
 
 | | X64 | ARM64 |
 | --- | --- | --- |
-| GUI | [Download](https://github.com/Equicord/Equilotl/releases/latest/download/Equilotl.exe) | [Download](https://github.com/Equicord/Equilotl/releases/latest/download/Equilotl-arm64.exe) |
-| CLI | [Download](https://github.com/Equicord/Equilotl/releases/latest/download/EquilotlCli.exe) | [Download](https://github.com/Equicord/Equilotl/releases/latest/download/EquilotlCli-arm64.exe) |
+| GUI | [Download](https://github.com/phklie/Equilotl/releases/latest/download/Equilotl.exe) | [Download](https://github.com/phklie/Equilotl/releases/latest/download/Equilotl-arm64.exe) |
+| CLI | [Download](https://github.com/phklie/Equilotl/releases/latest/download/EquilotlCli.exe) | [Download](https://github.com/phklie/Equilotl/releases/latest/download/EquilotlCli-arm64.exe) |
 
 MacOS
 
 | | Universal | X64 | ARM64 |
 | --- | --- | --- | --- |
-| GUI | [Download](https://github.com/Equicord/Equilotl/releases/latest/download/Equilotl.dmg) | [Download](https://github.com/Equicord/Equilotl/releases/latest/download/Equilotl-x64.dmg) | [Download](https://github.com/Equicord/Equilotl/releases/latest/download/Equilotl-arm64.dmg) |
-| CLI | [Download](https://github.com/Equicord/Equilotl/releases/latest/download/EquilotlCli-universal) | [Download](https://github.com/Equicord/Equilotl/releases/latest/download/EquilotlCli-x64) | [Download](https://github.com/Equicord/Equilotl/releases/latest/download/EquilotlCli-arm64) |
+| GUI | [Download](https://github.com/phklie/Equilotl/releases/latest/download/Equilotl.dmg) | [Download](https://github.com/phklie/Equilotl/releases/latest/download/Equilotl-x64.dmg) | [Download](https://github.com/phklie/Equilotl/releases/latest/download/Equilotl-arm64.dmg) |
+| CLI | [Download](https://github.com/phklie/Equilotl/releases/latest/download/EquilotlCli-universal) | [Download](https://github.com/phklie/Equilotl/releases/latest/download/EquilotlCli-x64) | [Download](https://github.com/phklie/Equilotl/releases/latest/download/EquilotlCli-arm64) |
 
 The CLI builds are plain binaries, so run `chmod +x <file>` after downloading.
 
@@ -34,13 +34,13 @@ Linux
 
 | | X64 | ARM64 |
 | --- | --- | --- |
-| Combined GUI | [Download](https://github.com/Equicord/Equilotl/releases/latest/download/Equilotl) | [Download](https://github.com/Equicord/Equilotl/releases/latest/download/Equilotl-arm64) |
-| X11 GUI | [Download](https://github.com/Equicord/Equilotl/releases/latest/download/Equilotl-x11) | [Download](https://github.com/Equicord/Equilotl/releases/latest/download/Equilotl-x11-arm64) |
-| Wayland GUI | [Download](https://github.com/Equicord/Equilotl/releases/latest/download/Equilotl-wayland) | [Download](https://github.com/Equicord/Equilotl/releases/latest/download/Equilotl-wayland-arm64) |
-| CLI | [Download](https://github.com/Equicord/Equilotl/releases/latest/download/EquilotlCli-linux) | [Download](https://github.com/Equicord/Equilotl/releases/latest/download/EquilotlCli-linux-arm64) |
+| Combined GUI | [Download](https://github.com/phklie/Equilotl/releases/latest/download/Equilotl) | [Download](https://github.com/phklie/Equilotl/releases/latest/download/Equilotl-arm64) |
+| X11 GUI | [Download](https://github.com/phklie/Equilotl/releases/latest/download/Equilotl-x11) | [Download](https://github.com/phklie/Equilotl/releases/latest/download/Equilotl-x11-arm64) |
+| Wayland GUI | [Download](https://github.com/phklie/Equilotl/releases/latest/download/Equilotl-wayland) | [Download](https://github.com/phklie/Equilotl/releases/latest/download/Equilotl-wayland-arm64) |
+| CLI | [Download](https://github.com/phklie/Equilotl/releases/latest/download/EquilotlCli-linux) | [Download](https://github.com/phklie/Equilotl/releases/latest/download/EquilotlCli-linux-arm64) |
 
 ```shell
-bash -c "$(curl -sS https://raw.githubusercontent.com/Equicord/Equilotl/refs/heads/main/install.sh)"
+bash -c "$(curl -sS https://raw.githubusercontent.com/phklie/Equilotl/refs/heads/main/install.sh)"
 ```
 
 ## Installing Equicord Devbuild
@@ -62,7 +62,7 @@ npm i -g pnpm
 Clone Equicord:
 
 ```shell
-git clone https://github.com/Equicord/Equicord
+git clone https://github.com/phklie/Equicord
 cd Equicord
 ```
 
