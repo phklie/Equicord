@@ -37,6 +37,18 @@ const CONTRIBUTOR_BADGE = "https://cdn.discordapp.com/emojis/1562267648857997356
 const EQUICORD_CONTRIBUTOR_BADGE = "https://equicord.org/assets/favicon.png";
 const USERPLUGIN_CONTRIBUTOR_BADGE = "https://equicord.org/assets/icons/misc/userplugin.png";
 
+type SpecialBadgeData = {
+    tooltip: string;
+    badge: string;
+};
+
+type BadgesData = Record<
+    string,
+    Array<Record<"tooltip" | "badge", string>>
+> & {
+    special?: Record<string, SpecialBadgeData>;
+};
+
 const ContributorBadge: ProfileBadge = {
     id: "vencord_contributor_badge",
     description: "Vencord Contributor",
@@ -83,7 +95,7 @@ const UserPluginContributorBadge: ProfileBadge = {
     },
 };
 
-let DonorBadges = {} as Record<string, Array<Record<"tooltip" | "badge", string>>>;
+let DonorBadges = {} as BadgesData;
 let EquicordDonorBadges = {} as Record<string, Array<Record<"tooltip" | "badge", string>>>;
 
 async function loadBadges(url: string, noCache = false) {
@@ -201,7 +213,20 @@ export default definePlugin({
         if (!profile) return [];
 
         try {
-            return _getBadges(profile);
+            const badges = _getBadges(profile);
+
+            const specialBadge = DonorBadges.special?.[profile.userId];
+
+            if (specialBadge) {
+                badges.push({
+                    id: `vc_special_badge_${profile.userId}`,
+                    description: specialBadge.tooltip,
+                    iconSrc: specialBadge.badge,
+                    position: BadgePosition.START
+                });
+            }
+
+            return badges;
         } catch (e) {
             new Logger("BadgeAPI#getBadges").error(e);
             return [];
