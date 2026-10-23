@@ -46,7 +46,7 @@ type BadgesData = Record<
     string,
     Array<Record<"tooltip" | "badge", string>>
 > & {
-    special?: Record<string, SpecialBadgeData>;
+    special?: Record<string, SpecialBadgeData | SpecialBadgeData[]>;
 };
 
 const ContributorBadge: ProfileBadge = {
@@ -215,16 +215,19 @@ export default definePlugin({
         try {
             const badges = _getBadges(profile);
 
-            const specialBadge = DonorBadges.special?.[profile.userId];
+            const special: SpecialBadgeData | SpecialBadgeData[] | undefined =
+                (DonorBadges as any).special?.[profile.userId];
+            const specialList = !special ? [] : Array.isArray(special) ? special : [special];
 
-            if (specialBadge) {
+            specialList.forEach((specialBadge, idx) => {
+                if (!specialBadge?.badge) return;
                 badges.push({
-                    id: `vc_special_badge_${profile.userId}`,
+                    id: `vc_special_badge_${profile.userId}_${idx}`,
                     description: specialBadge.tooltip,
                     iconSrc: specialBadge.badge,
                     position: BadgePosition.START
                 });
-            }
+            });
 
             return badges;
         } catch (e) {
