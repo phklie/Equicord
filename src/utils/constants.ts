@@ -720,6 +720,10 @@ export const Devs = /* #__PURE__*/ Object.freeze({
         name: "f3tch",
         id: 1016388460929626174n
     },
+    kaxtusik: {
+        name: "kaxtusik",
+        id: 549599621056561152n
+    },
     Kaerion: {
         name: "Kaerion",
         id: 1409130527973441658n
@@ -727,7 +731,7 @@ export const Devs = /* #__PURE__*/ Object.freeze({
     imnotplayinginreallife: {
         name: "I'm not playing in real life",
         id: 841939724306087986n
-    }
+    },
 } satisfies Record<string, Dev>);
 
 export const EquicordDevs = Object.freeze({

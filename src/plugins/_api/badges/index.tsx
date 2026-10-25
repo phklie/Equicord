@@ -33,18 +33,6 @@ import Plugins, { PluginMeta } from "~plugins";
 
 import { EquicordDonorModal, EquicordTranslatorModal, VencordDonorModal } from "./modals";
 
-type SpecialBadgeData = {
-    tooltip: string;
-    badge: string;
-};
-
-type BadgesData = Record<
-    string,
-    Array<Record<"tooltip" | "badge", string>>
-> & {
-    special?: Record<string, SpecialBadgeData | SpecialBadgeData[]>;
-};
-
 const ContributorBadge: ProfileBadge = {
     id: "vencord_contributor_badge",
     description: "Vencord Contributor",
@@ -280,7 +268,7 @@ export default definePlugin({
         }
     },
 
-        getDirectoryBadge(id: string) {
+    getDirectoryBadge(id: string) {
         return DirectoryBadges[id];
     },
 
