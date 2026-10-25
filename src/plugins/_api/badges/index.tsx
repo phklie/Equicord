@@ -270,7 +270,7 @@ export default definePlugin({
                     iconSrc: specialBadge.badge,
                     description: specialBadge.tooltip,
                     name: specialBadge.tooltip,
-                    infoLabel: "Special",
+                    infoLabel: "",
                     rarity: BadgeRarity.MYTHIC,
                     position: BadgePosition.START,
                     onContextMenu(event, badge) {
