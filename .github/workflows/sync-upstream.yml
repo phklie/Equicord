@@ -42,7 +42,7 @@ jobs:
             exit 0
           fi
 
-          if git merge upstream/main --no-edit --message "chore: merge with upstream"; then
+          if git merge upstream/main --no-edit --message "Merge remote-tracking branch 'upstream/main'"; then
             git push origin main
             echo "Sync complete."
           else
