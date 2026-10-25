@@ -33,6 +33,18 @@ import Plugins, { PluginMeta } from "~plugins";
 
 import { EquicordDonorModal, EquicordTranslatorModal, VencordDonorModal } from "./modals";
 
+type SpecialBadgeData = {
+    tooltip: string;
+    badge: string;
+};
+
+type BadgesData = Record<
+    string,
+    Array<Record<"tooltip" | "badge", string>>
+> & {
+    special?: Record<string, SpecialBadgeData | SpecialBadgeData[]>;
+};
+
 const ContributorBadge: ProfileBadge = {
     id: "vencord_contributor_badge",
     description: "Vencord Contributor",
@@ -255,9 +267,15 @@ export default definePlugin({
                 if (!specialBadge?.badge) return;
                 badges.push({
                     id: `vc_special_badge_${profile.userId}_${idx}`,
-                    description: specialBadge.tooltip,
                     iconSrc: specialBadge.badge,
-                    position: BadgePosition.START
+                    description: specialBadge.tooltip,
+                    name: specialBadge.tooltip,
+                    infoLabel: "Special",
+                    rarity: BadgeRarity.MYTHIC,
+                    position: BadgePosition.START,
+                    onContextMenu(event, badge) {
+                        ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
+                    }
                 });
             });
 
