@@ -1,6 +1,6 @@
 /*
- * Vencord, a modification for Discord's desktop app
- * Copyright (c) 2024 Vendicated and contributors
+ * Vencord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -10,10 +10,10 @@ import { HeaderBarButton } from "@api/HeaderBar";
 import { definePluginSettings } from "@api/Settings";
 import { EquicordDevs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
-import { Popout, useRef, useState } from "@webpack/common";
+import { useState } from "@webpack/common";
 
-import { renderPopout } from "./menu";
 import { runAction, stopAction, useStatus } from "./actions";
+import { MassCleanModal } from "./menu";
 
 // ─── Settings ────────────────────────────────────────────────────────────────
 
@@ -22,12 +22,6 @@ export const settings = definePluginSettings({
         type: OptionType.NUMBER,
         description: "Delay between each delete request (ms) — max 200",
         default: 150,
-        max: 200,
-    },
-    searchLimit: {
-        type: OptionType.NUMBER,
-        description: "Messages to fetch per search batch — max 200",
-        default: 25,
         max: 200,
     },
 });
@@ -91,34 +85,22 @@ function ChannelDeleteBar() {
     );
 }
 
-// ─── Header bar popout button ─────────────────────────────────────────────────
+// ─── Header bar button + centered modal ───────────────────────────────────────
 
 function MassCleanButton() {
-    const buttonRef = useRef(null);
-    const [show, setShow] = useState(false);
+    const [open, setOpen] = useState(false);
 
     return (
-        <Popout
-            position="bottom"
-            align="right"
-            spacing={8}
-            animation={Popout.Animation.NONE}
-            shouldShow={show}
-            onRequestClose={() => setShow(false)}
-            targetElementRef={buttonRef}
-            renderPopout={() => renderPopout(() => setShow(false))}
-        >
-            {(_, { isShown }) => (
-                <HeaderBarButton
-                    ref={buttonRef}
-                    className="mc-btn"
-                    onClick={() => setShow(v => !v)}
-                    tooltip={isShown ? null : "MassClean"}
-                    icon={Icon}
-                    selected={isShown}
-                />
-            )}
-        </Popout>
+        <>
+            <HeaderBarButton
+                className="mc-btn"
+                onClick={() => setOpen(v => !v)}
+                tooltip={open ? null : "MassClean"}
+                icon={Icon}
+                selected={open}
+            />
+            <MassCleanModal open={open} onClose={() => setOpen(false)} />
+        </>
     );
 }
 
@@ -141,6 +123,7 @@ export default definePlugin({
     toolboxActions: {
         "Delete channel messages": () => runAction("channel"),
         "Delete all server messages": () => runAction("allServers"),
+        "Leave all servers": () => runAction("leaveServers"),
         "Remove all friends": () => runAction("friends"),
         "Nuke account data": () => runAction("nuke"),
         "Stop current action": stopAction,

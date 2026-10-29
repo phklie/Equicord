@@ -3,160 +3,378 @@
     -webkit-app-region: no-drag;
 }
 
-.mc-icon {
-    color: var(--interactive-icon-default);
+/* ── Backdrop ── */
+.mc-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0);
+    backdrop-filter: blur(0px);
+    transition: background .18s ease, backdrop-filter .18s ease;
 }
 
-.mc-btn[class*="selected"] .mc-icon {
-    color: var(--interactive-icon-active);
+.mc-backdrop.mc-in {
+    background: rgba(0, 0, 0, .6);
+    backdrop-filter: blur(6px);
 }
 
-.mc-btn:hover .mc-icon {
-    color: var(--interactive-icon-hover);
+/* ── Modal ── */
+.mc-modal {
+    width: 420px;
+    max-width: calc(100vw - 32px);
+    background: #0a0a0a;
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 14px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, .7);
+    color: #fff;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(8px) scale(.97);
+    transition: opacity .18s ease, transform .22s cubic-bezier(.2, .8, .2, 1);
 }
 
-/* ── Popout container ── */
-.mc-popout {
-    min-width: 280px;
-    padding: 8px 6px;
-    background: #111214;
-    border: 1px solid #2e2f33;
+.mc-in .mc-modal {
+    opacity: 1;
+    transform: none;
+}
+
+.mc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px 14px;
+}
+
+.mc-title {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    color: #fff;
+}
+
+.mc-subtitle {
+    margin-top: 2px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, .45);
+}
+
+.mc-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
     border-radius: 8px;
-    box-shadow: 0 8px 32px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4);
+    background: transparent;
+    color: rgba(255, 255, 255, .5);
+    cursor: pointer;
+    transition: background .15s, color .15s;
 }
 
-/* ── Section label ── */
-.mc-section-label {
-    padding: 6px 10px 4px;
-    font-size: 10px;
-    font-weight: 700;
-    color: #72767d;
-    text-transform: uppercase;
-    letter-spacing: .08em;
+.mc-close:hover {
+    background: rgba(255, 255, 255, .08);
+    color: #fff;
 }
 
-/* ── Row item ── */
+/* ── View switch (list <-> confirm) ── */
+.mc-view {
+    animation: mc-view-in .18s ease both;
+}
+
+@keyframes mc-view-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* ── List ── */
+.mc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 10px 10px;
+}
+
 .mc-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 7px 10px;
-    border-radius: 4px;
+    gap: 14px;
+    width: 100%;
+    padding: 12px 12px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: #fff;
+    text-align: left;
     cursor: pointer;
-    user-select: none;
-    transition: background 0.1s;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
 }
 
-.mc-item:hover {
-    background: #1e1f22;
+.mc-item:hover:not(:disabled) {
+    background: rgba(255, 255, 255, .06);
+    border-color: rgba(255, 255, 255, .1);
 }
 
-/* ── Icon box ── */
+.mc-item:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+}
+
 .mc-item-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    font-size: 17px;
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, .06);
+    color: #fff;
+    transition: background .15s, color .15s;
 }
 
-.mc-item-icon.blue   { background: #1a2e4a; color: #5b8dee; }
-.mc-item-icon.orange { background: #3a1f0d; color: #f0862a; }
-.mc-item-icon.red    { background: #3c1618; color: #ed4245; }
-.mc-item-icon.danger { background: #2e0a0a; color: #f33;    }
-
-/* ── Text ── */
-.mc-item-text { flex: 1; min-width: 0; }
+.mc-item-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
 
 .mc-item-title {
     font-size: 14px;
     font-weight: 500;
-    color: #dcddde;
-    white-space: nowrap;
+    color: #fff;
+    transition: color .15s;
 }
 
 .mc-item-sub {
-    font-size: 11px;
-    color: #72767d;
-    line-height: 1.4;
-    margin-top: 1px;
+    font-size: 12px;
+    line-height: 1.35;
+    color: rgba(255, 255, 255, .45);
 }
 
-/* ── Separator ── */
-.mc-separator {
-    height: 1px;
-    background: #2e2f33;
-    margin: 4px 8px;
+/* ── Danger (red only on hover) ── */
+.mc-item.mc-danger:hover:not(:disabled) {
+    background: rgba(237, 66, 69, .1);
+    border-color: rgba(237, 66, 69, .35);
 }
 
-/* ── Status bar (inside popout) ── */
-.mc-status-bar {
+.mc-item.mc-danger:hover:not(:disabled) .mc-item-icon {
+    background: rgba(237, 66, 69, .16);
+    color: #ff4d4f;
+}
+
+.mc-item.mc-danger:hover:not(:disabled) .mc-item-title {
+    color: #ff4d4f;
+}
+
+/* ── Confirm view ── */
+.mc-confirm {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 4px 20px 18px;
+}
+
+.mc-confirm-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, .03);
+}
+
+.mc-confirm-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.mc-confirm-text {
+    margin-top: 4px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, .55);
+}
+
+/* nuke confirm card is red from the start */
+.mc-confirm-card.mc-danger-card {
+    border-color: rgba(237, 66, 69, .4);
+    background: rgba(237, 66, 69, .08);
+}
+
+.mc-danger-card .mc-item-icon {
+    background: rgba(237, 66, 69, .16);
+    color: #ff4d4f;
+}
+
+.mc-danger-card .mc-confirm-title {
+    color: #ff4d4f;
+}
+
+.mc-type-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mc-type-label {
+    font-size: 12px;
+    color: rgba(255, 255, 255, .5);
+}
+
+.mc-type-label b {
+    color: #fff;
+    letter-spacing: .08em;
+}
+
+.mc-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 12px;
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .04);
+    color: #fff;
+    font-size: 13px;
+    letter-spacing: .08em;
+    outline: none;
+    transition: border-color .15s, background .15s;
+}
+
+.mc-input:focus {
+    border-color: rgba(255, 255, 255, .35);
+    background: rgba(255, 255, 255, .06);
+}
+
+.mc-input::placeholder {
+    color: rgba(255, 255, 255, .2);
+}
+
+.mc-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.mc-btn-ghost,
+.mc-btn-solid {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s, opacity .15s;
+}
+
+.mc-btn-ghost {
+    border: 1px solid rgba(255, 255, 255, .15);
+    background: transparent;
+    color: #fff;
+}
+
+.mc-btn-ghost:hover {
+    background: rgba(255, 255, 255, .08);
+}
+
+.mc-btn-solid {
+    border: 1px solid transparent;
+    background: #fff;
+    color: #000;
+}
+
+.mc-btn-solid:hover:not(:disabled) {
+    opacity: .85;
+}
+
+.mc-btn-solid:disabled {
+    opacity: .3;
+    cursor: not-allowed;
+}
+
+.mc-btn-solid.mc-btn-danger {
+    background: #ed4245;
+    color: #fff;
+}
+
+.mc-btn-solid.mc-btn-danger:hover:not(:disabled) {
+    background: #c93b3b;
+    opacity: 1;
+}
+
+/* ── Footer / status ── */
+.mc-footer {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    border-radius: 4px;
-    background: #1e1f22;
-    margin: 2px 0 0;
+    gap: 10px;
+    padding: 12px 20px;
+    border-top: 1px solid rgba(255, 255, 255, .07);
+    background: rgba(255, 255, 255, .02);
 }
 
 .mc-status-dot {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #4e5058;
+    background: rgba(255, 255, 255, .25);
     flex-shrink: 0;
     transition: background .3s;
 }
 
 .mc-status-dot.running {
-    background: #23a55a;
-    animation: mc-pulse 1.2s ease-in-out infinite;
+    background: #fff;
+    animation: mc-pulse 1.4s ease-in-out infinite;
 }
 
 @keyframes mc-pulse {
     0%, 100% { opacity: 1; }
-    50%       { opacity: .3; }
+    50%      { opacity: .3; }
 }
 
 .mc-status-text {
     flex: 1;
     font-size: 12px;
-    color: #b5bac1;
+    color: rgba(255, 255, 255, .6);
 }
 
-/* ── Buttons ── */
+/* ── Buttons (also used by the channel bar) ── */
 .mc-stop-btn {
-    padding: 2px 10px;
-    border-radius: 3px;
-    border: none;
-    background: #c93b3b;
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, .2);
+    background: transparent;
     color: #fff;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
-    transition: background .1s;
+    transition: background .15s, border-color .15s, color .15s;
 }
 
-.mc-stop-btn:hover { background: #a12d2d; }
+.mc-stop-btn:hover {
+    background: rgba(237, 66, 69, .15);
+    border-color: rgba(237, 66, 69, .5);
+    color: #ff4d4f;
+}
 
 .mc-start-btn {
-    padding: 3px 12px;
-    border-radius: 3px;
+    padding: 4px 12px;
+    border-radius: 6px;
     border: none;
-    background: #248046;
-    color: #fff;
+    background: #fff;
+    color: #000;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
-    transition: background .1s;
+    transition: opacity .15s;
 }
 
-.mc-start-btn:hover    { background: #1a6b37; }
-.mc-start-btn:disabled { opacity: .45; cursor: not-allowed; }
+.mc-start-btn:hover    { opacity: .85; }
+.mc-start-btn:disabled { opacity: .35; cursor: not-allowed; }
 
 /* ── Channel bar (above input) ── */
 .mc-channel-bar {
@@ -164,25 +382,19 @@
     align-items: center;
     gap: 8px;
     padding: 5px 12px;
-    background: #1e1f22;
-    border-top: 1px solid #2e2f33;
+    background: #0a0a0a;
+    border-top: 1px solid rgba(255, 255, 255, .08);
 }
 
 .mc-channel-bar-label {
     font-size: 12px;
-    color: #72767d;
+    color: rgba(255, 255, 255, .5);
     margin-right: 2px;
     white-space: nowrap;
 }
 
-.mc-channel-status {
+.mc-status-bar {
     display: flex;
     align-items: center;
-    gap: 5px;
-    margin-left: auto;
-}
-
-.mc-channel-status span {
-    font-size: 12px;
-    color: #72767d;
+    gap: 8px;
 }
