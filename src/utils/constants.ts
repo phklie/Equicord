@@ -111,8 +111,7 @@ export const Devs = /* #__PURE__*/ Object.freeze({
     },
     phklie: {
         name: "phklie",
-        id: 1329648029661397094n,
-        badge: false
+        id: 1565845354715414668n,
     },
     rushii: {
         name: "rushii",
