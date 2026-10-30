@@ -428,6 +428,7 @@ export const ScreenshareSettingsModal = (props: ScreenshareSettingsModalProps) =
     return (
         <SettingsModal
             size={simpleMode ? ModalSize.DYNAMIC : ModalSize.LARGE}
+            contentWidth={simpleMode ? "55em" : "57em"}
             title="Screenshare Settings"
             closeButtonName="Apply"
             footerContent={
@@ -442,14 +443,14 @@ export const ScreenshareSettingsModal = (props: ScreenshareSettingsModalProps) =
             }}
         >
             {simpleMode
-                ? <div style={{ width: "55em" }}>
+                ? <>
                     <SettingsModalCardRow>
                         {settingsCardResolutionSimple}
                         {settingsCardFramerateSimple}
                         {settingsCardVideoBitrateSimple}
                         {screenshareAudioStore && settingsCardAudioSimple}
                     </SettingsModalCardRow>
-                </div>
+                </>
                 : <>
                     <SettingsModalCardRow>
                         {settingsCardResolution}

@@ -39,7 +39,9 @@ export const SettingsModalCard = ({ children, title, switchProps, switchEnabled,
                 boxSizing: "border-box",
                 display: "flex",
                 flexDirection: "column",
-                flex: flex ?? 1,
+                // flex-basis 0 + minWidth 0 lets the card shrink instead of overflowing the row
+                flex: `${flex ?? 1} 1 0%`,
+                minWidth: 0,
                 ...(cardProps?.style ? cardProps.style : {})
             }}>
             {title && <Heading tag="h5" style={{ margin: 0 }}>{title}</Heading>}
@@ -50,13 +52,15 @@ export const SettingsModalCard = ({ children, title, switchProps, switchEnabled,
                 justifyContent: "center",
                 alignItems: "center",
                 paddingTop: "0.6em",
+                minWidth: 0
             }}>
                 {children &&
                     <div style={{
                         display: "flex",
                         alignItems: "flex-end",
                         gap: "1em",
-                        flex: 1
+                        flex: 1,
+                        minWidth: 0
                     }}>
                         {children}
                     </div>
@@ -68,6 +72,7 @@ export const SettingsModalCard = ({ children, title, switchProps, switchEnabled,
                         flexDirection: "column",
                         justifyContent: "center",
                         alignItems: "center",
+                        flexShrink: 0
                     }}>
                         <Heading tag="h5">Status</Heading>
                         <Switch

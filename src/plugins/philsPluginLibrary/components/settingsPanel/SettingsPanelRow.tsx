@@ -28,7 +28,15 @@ export const SettingsPanelRow = ({ children }: SettingsPanelRowProps) => {
     return (
         <div
             className={classes(panelClasses.actionButtons)}
-            style={{ padding: 0 }}
+            style={{
+                padding: 0,
+                display: "flex",
+                flexWrap: "nowrap",
+                gap: "8px",
+                width: "100%",
+                minWidth: 0,
+                boxSizing: "border-box"
+            }}
         >
             {children}
         </div>

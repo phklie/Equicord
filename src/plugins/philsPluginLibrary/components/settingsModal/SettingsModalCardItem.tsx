@@ -30,7 +30,8 @@ export const SettingsModalCardItem = ({ children, title }: SettingsModalCardItem
             display: "flex",
             flexDirection: "column",
             gap: "0.4em",
-            width: "100%"
+            width: "100%",
+            minWidth: 0
         }}>
             {title && <Heading tag="h5" style={{ margin: 0 }}>{title}</Heading>}
             {children}

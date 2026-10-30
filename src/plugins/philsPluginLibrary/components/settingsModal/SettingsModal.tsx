@@ -16,62 +16,80 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { BaseText } from "@components/BaseText";
-import { Button } from "@components/Button";
 import { Flex } from "@components/Flex";
 import { ContributorAuthorSummary } from "@plugins/philsPluginLibrary/components/ContributorAuthorSummary";
 import { Author, Contributor } from "@plugins/philsPluginLibrary/types";
-import { ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalRoot } from "@utils/modal";
+import { RenderModalProps } from "@vencord/discord-types";
+import { Modal } from "@webpack/common";
 import React, { JSX } from "react";
 
-
-export interface SettingsModalProps extends React.ComponentProps<typeof ModalRoot> {
+export interface SettingsModalProps extends RenderModalProps {
     title?: string;
-    onClose: () => void;
+    size?: string;
+    children?: React.ReactNode;
     onDone?: () => void;
     footerContent?: JSX.Element;
     closeButtonName?: string;
     author?: Author,
     contributors?: Contributor[];
+    /** Width of the modal's content area (any CSS length, e.g. "50em"). The modal itself becomes this + 48px padding. */
+    contentWidth?: string;
 }
 
+const LEGACY_SIZE_MAP: Record<string, string> = {
+    small: "sm",
+    medium: "md",
+    large: "lg",
+    dynamic: "md"
+};
+
 export const SettingsModal = (props: SettingsModalProps) => {
-    const doneButton =
-        <Button
-            size="small"
-            variant="primary"
-            onClick={props.onDone}
-        >
-            {props.closeButtonName ?? "Done"}
-        </Button>;
+    const { size, title, children, onClose, onDone, footerContent, closeButtonName, author, contributors, contentWidth } = props;
+
+    // unique class per width so stacked modals (e.g. screenshare -> audio) don't affect each other
+    const widthClass = contentWidth ? `vc-sm-w-${contentWidth.replace(/[^a-z0-9]/gi, "_")}` : undefined;
+
+    const hasContributors = !!author || (contributors && contributors.length > 0);
 
     return (
-        <ModalRoot {...props}>
-            <ModalHeader separator={false}>
-                {props.title && <BaseText size="lg" weight="semibold" style={{ flexGrow: 1 }}>{props.title}</BaseText>}
-                <div style={{ marginLeft: "auto" }}>
-                    <ModalCloseButton onClick={props.onClose} />
-                </div>
-            </ModalHeader>
-            <ModalContent style={{ marginBottom: "1em", display: "flex", flexDirection: "column", gap: "1em" }}>
-                {props.children}
-            </ModalContent>
-            <ModalFooter>
-                <Flex style={{ width: "100%" }}>
-                    <div style={{ flex: 1, display: "flex" }}>
-                        {(props.author || props.contributors && props.contributors.length > 0) &&
-
-                            <Flex style={{ justifyContent: "flex-start", alignItems: "center", flex: 1 }}>
-                                <ContributorAuthorSummary
-                                    author={props.author}
-                                    contributors={props.contributors} />
-                            </Flex>
-                        }
-                        {props.footerContent}
-                    </div>
-                    <div style={{ marginLeft: "auto" }}>{doneButton}</div>
+        <Modal
+            transitionState={props.transitionState}
+            onClose={onClose}
+            title={title ?? ""}
+            size={size ? LEGACY_SIZE_MAP[size] ?? size : "md"}
+            actions={[
+                {
+                    text: closeButtonName ?? "Done",
+                    variant: "primary",
+                    onClick: () => (onDone ?? onClose)()
+                }
+            ]}
+            actionBarInput={(hasContributors || footerContent) && (
+                <Flex style={{ width: "100%", alignItems: "center", gap: "1em" }}>
+                    {hasContributors && (
+                        <ContributorAuthorSummary
+                            author={author}
+                            contributors={contributors} />
+                    )}
+                    {footerContent}
                 </Flex>
-            </ModalFooter>
-        </ModalRoot >
+            )}
+        >
+            {/* width/minWidth/boxSizing keep the content inside the modal body so no horizontal scrollbar appears */}
+            {contentWidth && (
+                <style>{`[data-mana-component="modal"]:has(.${widthClass}) { width: calc(${contentWidth} + 48px) !important; max-width: 95vw !important; }`}</style>
+            )}
+            <div className={widthClass} style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "1em",
+                marginBottom: "1em",
+                width: "100%",
+                minWidth: 0,
+                boxSizing: "border-box"
+            }}>
+                {children}
+            </div>
+        </Modal>
     );
 };

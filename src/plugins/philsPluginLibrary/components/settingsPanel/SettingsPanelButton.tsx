@@ -31,7 +31,11 @@ export const SettingsPanelButton = (props: SettingsPanelButtonProps) => {
         <Button
             size="small"
             className={classes(panelClasses.button, panelClasses.buttonColor)}
+            // Discord's CSS hides extra buttons in this row (display: none) -> force it visible
+            ref={el => el?.style.setProperty("display", "flex", "important")}
             {...props}
+            // equal share of the row so 3 buttons always fit on one line (Button's min-width/padding can push the 3rd out)
+            style={{ flex: "1 1 0%", minWidth: 0, ...props.style }}
         >
             {props.icon && <props.icon className={classes(panelClasses.buttonIcon)} />}
         </Button>

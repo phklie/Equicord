@@ -9,7 +9,7 @@ import { definePluginSettings } from "@api/Settings";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
 import { findStoreLazy } from "@webpack";
-import { Alerts, ChannelStore, GuildStore, Menu, PermissionStore, RestAPI, UserStore } from "@webpack/common";
+import { Alerts, ChannelStore, Menu, PermissionStore, RestAPI, UserStore } from "@webpack/common";
 
 interface VoiceState {
     userId: string;
@@ -250,12 +250,12 @@ const UserContext: NavContextMenuPatchCallback = (children, { user }) => {
 
     children.splice(-1, 0, (
         <Menu.MenuGroup>
-            
+
             <Menu.MenuItem
                 id="vc-blacklist-channel"
                 label={blacklistedChannel
-                    ? `Remove from Voice Blacklist`
-                    : `Voice Blacklist`}
+                    ? "Remove from Voice Blacklist"
+                    : "Voice Blacklist"}
                 color={blacklistedChannel ? "danger" : undefined}
                 action={() => {
                     if (blacklistedChannel) {
@@ -274,7 +274,6 @@ const UserContext: NavContextMenuPatchCallback = (children, { user }) => {
                 }}
             />
 
-            
             <Menu.MenuItem
                 id="vc-blacklist-server"
                 label={blacklistedServerWide

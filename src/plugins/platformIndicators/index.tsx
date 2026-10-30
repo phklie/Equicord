@@ -25,7 +25,7 @@ import { addNicknameIcon, removeNicknameIcon } from "@api/NicknameIcons";
 import { definePluginSettings } from "@api/Settings";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
-import { DiscordPlatform, User } from "@vencord/discord-types";
+import { DiscordPlatform, OnlineStatus, User } from "@vencord/discord-types";
 import { filters, mapMangledModuleLazy } from "@webpack";
 import { AuthenticationStore, PresenceStore, SessionsStore, Tooltip, UserStore, useStateFromStores } from "@webpack/common";
 
@@ -73,7 +73,6 @@ const PlatformIcon = ({ platform, status, small }: { platform: DiscordPlatform; 
     const Icon = Icons[platform] ?? Icons.desktop;
     return <Icon color={useStatusFillColor(status)} tooltip={tooltip} small={small} />;
 };
-
 
 function ensureOwnStatus(user: User) {
     if (user.id !== AuthenticationStore.getId()) return;

@@ -26,7 +26,6 @@ import type { Channel, Guild, User } from "@vencord/discord-types";
 import { GuildMemberStore, IconUtils, Menu } from "@webpack/common";
 import type { MouseEvent } from "react";
 
-
 interface UserContextProps {
     channel: Channel;
     guildId?: string;

@@ -1,3 +1,4 @@
+/* stylelint-disable no-descending-specificity, selector-class-pattern, no-duplicate-selectors */
 .vc-uvs-speaker {
     color: var(--interactive-icon-default);
     display: flex;

@@ -18,9 +18,9 @@
 
 import { createDummyUser, types, UserSummaryItem } from "@plugins/philsPluginLibrary";
 import { PluginAuthor } from "@utils/types";
+import { User } from "@vencord/discord-types";
 import { findByProps } from "@webpack";
 import { useEffect, UserUtils, useState } from "@webpack/common";
-import { User } from "@vencord/discord-types";
 import React from "react";
 
 export interface AuthorUserSummaryItemProps extends Partial<React.ComponentProps<types.UserSummaryItem>> {

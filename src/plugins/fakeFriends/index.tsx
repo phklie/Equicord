@@ -17,11 +17,11 @@
 */
 
 import { addContextMenuPatch, NavContextMenuPatchCallback, removeContextMenuPatch } from "@api/ContextMenu";
-import { Modals, openModal } from "@utils/modal";
 import { Devs } from "@utils/constants";
+import { Modals, openModal } from "@utils/modal";
 import definePlugin from "@utils/types";
 import { RelationshipType } from "@vencord/discord-types/enums";
-import { find, filters } from "@webpack";
+import { filters,find } from "@webpack";
 import { ChannelStore, FluxDispatcher, GuildMemberStore, Menu, React, RelationshipStore, showToast, UserStore, UserUtils } from "@webpack/common";
 
 function t(str: string): string {
@@ -448,6 +448,7 @@ function askCount(title: string, max: number): Promise<number | null> {
         const resolveRef = { current: resolve, done: false };
 
         function CountModal({ modalProps }: { modalProps: any; }) {
+            const ModalComponents = Modals as any;
             const [value, setValue] = React.useState(String(Math.min(10, max)));
             const parsed = parseInt(value, 10);
             const valid = !isNaN(parsed) && parsed > 0 && parsed <= max;
@@ -468,14 +469,14 @@ function askCount(title: string, max: number): Promise<number | null> {
             }
 
             return (
-                <Modals.ModalRoot {...modalProps} size="small">
-                    <Modals.ModalHeader>
-                        <Modals.ModalCloseButton onClick={cancel} />
+                <ModalComponents.ModalRoot {...modalProps} size="small">
+                    <ModalComponents.ModalHeader>
+                        <ModalComponents.ModalCloseButton onClick={cancel} />
                         <h2 style={{ flex: 1, fontSize: 16, fontWeight: 700, color: "var(--white-500)" }}>
                             {title}
                         </h2>
-                    </Modals.ModalHeader>
-                    <Modals.ModalContent style={{ padding: "16px 20px" }}>
+                    </ModalComponents.ModalHeader>
+                    <ModalComponents.ModalContent style={{ padding: "16px 20px" }}>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                             <label style={{ fontSize: 12, fontWeight: 600, color: "#fff", textTransform: "uppercase", letterSpacing: ".04em" }}>
                                 {t("Number (max {max})").replace("{max}", max.toString())}
@@ -500,8 +501,8 @@ function askCount(title: string, max: number): Promise<number | null> {
                                 }}
                             />
                         </div>
-                    </Modals.ModalContent>
-                    <Modals.ModalFooter>
+                    </ModalComponents.ModalContent>
+                    <ModalComponents.ModalFooter>
                         <button
                             onClick={confirm}
                             disabled={!valid}
@@ -527,8 +528,8 @@ function askCount(title: string, max: number): Promise<number | null> {
                         >
                             {t("Cancel")}
                         </button>
-                    </Modals.ModalFooter>
-                </Modals.ModalRoot>
+                    </ModalComponents.ModalFooter>
+                </ModalComponents.ModalRoot>
             );
         }
 
@@ -558,7 +559,7 @@ async function fetchAllGuildMembers(guildId: string): Promise<void> {
     await new Promise(r => setTimeout(r, 1000));
 
     const after = (GuildMemberStore.getMemberIds(guildId) as string[]).length;
-    showToast.show({ message: t("{count} members available").replace("{count}", after.toString()), type: showToast.Type.SUCCESS, id: showToast.genId() });
+    showToast({ text: t("{count} members available").replace("{count}", after.toString()), variant: "success" });
 }
 
 function getGuildCandidates(guildId: string): string[] {
@@ -578,12 +579,12 @@ function getGuildCandidates(guildId: string): string[] {
 
 // ── Fake Friend Request avec saisie du nombre ─────────────────────────────────
 async function floodGuild(guildId: string) {
-    showToast.show({ message: t("Loading members..."), type: showToast.Type.MESSAGE, id: "ff-loading" });
+    showToast({ text: t("Loading members..."), variant: "default", });
     await fetchAllGuildMembers(guildId);
 
     const candidates = getGuildCandidates(guildId);
     if (!candidates.length) {
-        showToast.show({ message: t("No candidates available"), type: showToast.Type.FAILURE, id: showToast.genId() });
+        showToast({ text: t("No candidates available"), variant: "critical" });
         return;
     }
 
@@ -606,7 +607,7 @@ async function floodGuild(guildId: string) {
         }
         await new Promise(r => setTimeout(r, 15));
     }
-    showToast.show({ message: t("{count} fake friend request(s) sent!").replace("{count}", sent.toString()), type: showToast.Type.SUCCESS, id: showToast.genId() });
+    showToast({ text: t("{count} fake friend request(s) sent!").replace("{count}", sent.toString()), variant: "success" });
 }
 
 // ── Remove fake requests pour un serveur ──────────────────────────────────────
@@ -615,7 +616,7 @@ async function removeFakeFriendsForGuild(guildId: string) {
     const toRemove = [...fakeState.keys()].filter(id => memberIds.has(id));
 
     if (!toRemove.length) {
-        showToast.show({ message: t("No fake requests to remove for this server"), type: showToast.Type.MESSAGE, id: showToast.genId() });
+        showToast({ text: t("No fake requests to remove for this server"), variant: "default", });
         return;
     }
 
@@ -630,14 +631,14 @@ async function removeFakeFriendsForGuild(guildId: string) {
         }
     }
     await persistState();
-    showToast.show({ message: t("{count} fake request(s) removed!").replace("{count}", toRemove.length.toString()), type: showToast.Type.SUCCESS, id: showToast.genId() });
+    showToast({ text: t("{count} fake request(s) removed!").replace("{count}", toRemove.length.toString()), variant: "success", });
 }
 
 // ── Fake Message Request ─────────────────────────────────────────────────────
 async function fakeMessageRequestGuild(guildId: string) {
     const candidates = getGuildCandidates(guildId);
     if (!candidates.length) {
-        showToast.show({ message: t("No candidates available"), type: showToast.Type.FAILURE, id: showToast.genId() });
+        showToast({ text: t("No candidates available"), variant: "critical" });
         return;
     }
 
@@ -659,10 +660,9 @@ async function fakeMessageRequestGuild(guildId: string) {
         await new Promise(r => setTimeout(r, 60));
     }
 
-    showToast.show({
-        message: t("{count} message request(s) received!").replace("{count}", sent.toString()),
-        type: sent > 0 ? showToast.Type.SUCCESS : showToast.Type.FAILURE,
-        id: showToast.genId()
+    showToast({
+        text: t("{count} message request(s) received!").replace("{count}", sent.toString()),
+        variant: sent > 0 ? "success" : "critical"
     });
 }
 

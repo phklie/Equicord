@@ -46,7 +46,7 @@ export const useButtons = () => {
 
     React.useEffect(() => {
         settingsPanelButtonsSubscriptions.add(forceUpdate);
-        return () => void settingsPanelButtonsSubscriptions.delete(() => forceUpdate);
+        return () => void settingsPanelButtonsSubscriptions.delete(forceUpdate);
     }, []);
 
     return settingsPanelButtons;
@@ -54,6 +54,7 @@ export const useButtons = () => {
 
 export const ButtonsSettingsPanel = () => {
     const rawPanelButtons = useButtons();
+    console.log("[PhilsPluginLibrary] panel buttons:", rawPanelButtons.map(b => b.name));
 
     const convertRawPanelButtons = (buttons: PanelButton[]) => {
         const settingsPanelButtonsClone = [...buttons].sort();
@@ -102,6 +103,8 @@ export function replacedUserPanelComponent(oldComponent) {
 }
 
 export function addSettingsPanelButton(settings: PanelButton) {
+    console.log("[PhilsPluginLibrary] addSettingsPanelButton:", settings.name);
+    removeSettingsPanelButton(settings.name);
     settingsPanelButtons.push(settings);
 }
 

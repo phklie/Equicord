@@ -56,6 +56,17 @@ const simpleVoiceBitrates: readonly SelectOption[] = [
     }
 ] as const;
 
+// Fluid containers: take the modal's width instead of a fixed em width,
+// so the content never exceeds the modal body (no horizontal scrollbar).
+const containerStyle: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    gap: "1em",
+    width: "100%",
+    minWidth: 0,
+    boxSizing: "border-box"
+};
+
 export interface MicrophoneSettingsModalProps extends React.ComponentProps<typeof SettingsModal> {
     microphoneStore: ProfilableStore<MicrophoneStore, MicrophoneProfile>;
     showInfo?: boolean;
@@ -278,7 +289,7 @@ export const MicrophoneSettingsModal = (props: MicrophoneSettingsModalProps) => 
             profileableStore={microphoneStore} />;
 
     const infoCard =
-        <Card style={{ ...Styles.infoCard }}>
+        <Card style={{ ...Styles.infoCard, boxSizing: "border-box", width: "100%", minWidth: 0 }}>
             <Heading tag="h5">Important</Heading>
             <Paragraph>
                 To take full advantage of this plugin, please disable <span style={{ fontWeight: "bold" }}>Krisp</span> and <span style={{ fontWeight: "bold" }}>Echo Cancellation</span>, otherwise features like Stereo (Channels) will not work.
@@ -287,7 +298,9 @@ export const MicrophoneSettingsModal = (props: MicrophoneSettingsModalProps) => 
 
     return (
         <SettingsModal
-            size={simpleMode ? ModalSize.DYNAMIC : ModalSize.DYNAMIC}
+            // simple = default modal width, advanced = wider modal since it has 4 cards in a row
+            size={simpleMode ? ModalSize.DYNAMIC : "lg"}
+            contentWidth={simpleMode ? "30em" : "50em"}
             title="Microphone Settings"
             closeButtonName="Apply"
             footerContent={
@@ -302,7 +315,7 @@ export const MicrophoneSettingsModal = (props: MicrophoneSettingsModalProps) => 
             }}
         >
             {simpleMode
-                ? <div style={{ width: "30em", display: "flex", flexDirection: "column", gap: "1em" }}>
+                ? <div style={containerStyle}>
                     <SettingsModalCardRow>
                         {settingsCardVoiceBitrateSimple}
                         {settingsCardChannelsSimple}
@@ -313,7 +326,7 @@ export const MicrophoneSettingsModal = (props: MicrophoneSettingsModalProps) => 
                         </SettingsModalCardRow>
                     }
                 </div>
-                : <div style={{ display: "flex", flexDirection: "column", width: "50em", gap: "1em", maxHeight: "30em" }}>
+                : <div style={containerStyle}>
                     <SettingsModalCardRow>
                         {settingsCardFreq}
                         {settingsCardRate}

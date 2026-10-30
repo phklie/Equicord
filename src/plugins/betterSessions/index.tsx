@@ -208,4 +208,3 @@ export default definePlugin({
         clearInterval(this.checkInterval);
     }
 });
-

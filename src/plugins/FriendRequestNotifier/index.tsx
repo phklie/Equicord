@@ -1,7 +1,13 @@
-import definePlugin from "@utils/types";
-import { UserStore } from "@webpack/common";
+/*
+ * Vencord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 import { showNotification } from "@api/Notifications";
 import { Devs } from "@utils/constants";
+import definePlugin from "@utils/types";
+import { UserStore } from "@webpack/common";
 
 export default definePlugin({
     name: "FriendRequestNotifier",

@@ -19,7 +19,6 @@
 import { PluginInfo } from "@plugins/betterScreenshare.desktop/constants";
 import { createPluginStore, ProfilableInitializer, ProfilableStore, profileable, ProfileableProfile } from "@plugins/philsPluginLibrary";
 
-
 export interface ScreenshareProfile {
     width?: number,
     height?: number,

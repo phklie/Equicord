@@ -26,6 +26,13 @@ export interface SettingsModalRowProps extends Pick<React.ComponentProps<"div">,
 
 export const SettingsModalCardRow = ({ children, style, gap }: SettingsModalRowProps) => {
     return (
-        <div style={{ display: "flex", gap: gap ?? "1em", ...style }}>{children}</div>
+        <div style={{
+            display: "flex",
+            gap: gap ?? "1em",
+            width: "100%",
+            minWidth: 0,
+            boxSizing: "border-box",
+            ...style
+        }}>{children}</div>
     );
 };

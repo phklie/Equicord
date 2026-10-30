@@ -1,9 +1,15 @@
+/*
+ * Vencord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import definePlugin from "@utils/types";
 import { Message } from "@vencord/discord-types";
 import { findByPropsLazy } from "@webpack";
 import { UserStore } from "@webpack/common";
-import { Devs } from "@utils/constants";
 
 import { resolveGiftType } from "./giftCode";
 import { settings } from "./settings";
@@ -13,17 +19,15 @@ import { sendClaimWebhook } from "./webhook";
 const GIFT_LINK_REGEX = /(?:discord\.gift\/|discord\.com\/gifts?\/)([a-zA-Z0-9]{16,24})/;
 
 const logger = new Logger("NitroSniper");
-const GiftActions = findByPropsLazy("redeemGiftCode");
+const GiftActions = findByPropsLazy("redeemGiftCode", "fetchGiftCode");
 
 let startTime = 0;
 let claiming = false;
 const claimQueue: ClaimRequest[] = [];
-const seenCodes = new Set<string>();
 
 function resetState() {
     startTime = Date.now();
     claimQueue.length = 0;
-    seenCodes.clear();
     claiming = false;
 }
 
@@ -39,6 +43,10 @@ function shouldSkipMessage(message: Message) {
     return settings.store.ignoreOwnGiftLinks && isOwnMessage(message);
 }
 
+function isMessageOlderThanStart(message: Message) {
+    return new Date(message.timestamp).getTime() < startTime;
+}
+
 function extractGiftCode(content: string) {
     return content.match(GIFT_LINK_REGEX)?.[1] ?? null;
 }
@@ -46,9 +54,6 @@ function extractGiftCode(content: string) {
 function createClaimRequest(message: Message): ClaimRequest | null {
     const code = message.content ? extractGiftCode(message.content) : null;
     if (!code) return null;
-
-    if (seenCodes.has(code)) return null;
-    seenCodes.add(code);
 
     const authorId = message.author?.id;
     const authorAvatar = message.author?.avatar;
@@ -83,23 +88,16 @@ function continueQueue() {
     processQueue();
 }
 
-function redeem(request: ClaimRequest) {
-    const wantWebhook = settings.store.webhookUrl.trim().length > 0;
-    const giftType = wantWebhook ? resolveGiftType(request.code) : Promise.resolve(null);
+function handleClaimSuccess(request: ClaimRequest, giftType: Promise<string | null>) {
+    logger.log(`Successfully redeemed code: ${request.code}`);
+    void giftType.then(type => notifyClaim("claimed", request, type));
+    continueQueue();
+}
 
-    GiftActions.redeemGiftCode({
-        code: request.code,
-        onRedeemed: () => {
-            logger.log(`Successfully redeemed code: ${request.code}`);
-            if (wantWebhook) void giftType.then(type => notifyClaim("claimed", request, type));
-            continueQueue();
-        },
-        onError: (error: unknown) => {
-            logger.error(`Failed to redeem code: ${request.code}`, toError(error));
-            if (wantWebhook) void giftType.then(type => notifyClaim("failed", request, type));
-            continueQueue();
-        }
-    });
+function handleClaimFailure(request: ClaimRequest, error: Error, giftType: Promise<string | null>) {
+    logger.error(`Failed to redeem code: ${request.code}`, error);
+    void giftType.then(type => notifyClaim("failed", request, type));
+    continueQueue();
 }
 
 function processQueue() {
@@ -109,7 +107,15 @@ function processQueue() {
     if (!request) return;
 
     claiming = true;
-    redeem(request);
+    const giftType = settings.store.webhookUrl.trim()
+        ? resolveGiftType(request.code)
+        : Promise.resolve(null);
+
+    GiftActions.redeemGiftCode({
+        code: request.code,
+        onRedeemed: () => handleClaimSuccess(request, giftType),
+        onError: (error: unknown) => handleClaimFailure(request, toError(error), giftType)
+    });
 }
 
 export default definePlugin({
@@ -126,19 +132,13 @@ export default definePlugin({
 
     flux: {
         MESSAGE_CREATE({ message }: { message: Message; }) {
-            if (!message.content) return;
-            if (message.timestamp && new Date(message.timestamp).getTime() < startTime) return;
-            if (shouldSkipMessage(message)) return;
+            if (!message.content || shouldSkipMessage(message) || isMessageOlderThanStart(message)) return;
 
             const request = createClaimRequest(message);
             if (!request) return;
 
-            if (!claiming) {
-                claiming = true;
-                redeem(request);
-            } else {
-                claimQueue.push(request);
-            }
+            claimQueue.push(request);
+            processQueue();
         }
     }
 });

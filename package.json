@@ -57,6 +57,7 @@
         "monaco-editor": "catalog:",
         "nanoid": "catalog:",
         "native-file-system-adapter": "catalog:",
+        "typed-emitter": "^2.1.0",
         "virtual-merge": "1.0.1",
         "yaml-js": "catalog:"
     },
@@ -96,7 +97,7 @@
         "typescript-transform-paths": "catalog:",
         "zip-local": "catalog:"
     },
-    "packageManager": "pnpm@12.15.0",
+    "packageManager": "pnpm@12.16.1",
     "engines": {
         "node": ">=22"
     }

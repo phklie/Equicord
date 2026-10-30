@@ -55,16 +55,16 @@ function setCss() {
     const rules: string[] = [];
 
     if (settings.store.hideCamera) {
-        rules.push(`[class*="actionButtons"] > :nth-child(1) { display: none !important; }`);
+        rules.push("[class*=\"actionButtons\"] > :nth-child(1) { display: none !important; }");
     }
     if (settings.store.hideScreenShare) {
-        rules.push(`[class*="actionButtons"] > :nth-child(3) { display: none !important; }`);
+        rules.push("[class*=\"actionButtons\"] > :nth-child(3) { display: none !important; }");
     }
     if (settings.store.hideActivities) {
-        rules.push(`[class*="actionButtons"] > :nth-child(5) { display: none !important; }`);
+        rules.push("[class*=\"actionButtons\"] > :nth-child(5) { display: none !important; }");
     }
     if (settings.store.hideSoundboard) {
-        rules.push(`[class*="actionButtons"] > :nth-child(7) { display: none !important; }`);
+        rules.push("[class*=\"actionButtons\"] > :nth-child(7) { display: none !important; }");
     }
 
     style.textContent = rules.join("\n");

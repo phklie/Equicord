@@ -21,7 +21,6 @@ import { ProfilableStore, replaceObjectValuesIfExist, types, utils } from "@plug
 import { Logger } from "@utils/Logger";
 import { lodash } from "@webpack/common";
 
-
 export function getDefaultVideoTransportationOptions(connection: types.Connection) {
     return {
         ...connection.videoQualityManager.applyQualityConstraints({}).constraints,

@@ -11,13 +11,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0);
-    backdrop-filter: blur(0px);
+    background: rgb(0 0 0 / 0%);
+    backdrop-filter: blur(0);
     transition: background .18s ease, backdrop-filter .18s ease;
 }
 
 .mc-backdrop.mc-in {
-    background: rgba(0, 0, 0, .6);
+    background: rgb(0 0 0 / 60%);
     backdrop-filter: blur(6px);
 }
 
@@ -26,9 +26,9 @@
     width: 420px;
     max-width: calc(100vw - 32px);
     background: #0a0a0a;
-    border: 1px solid rgba(255, 255, 255, .08);
+    border: 1px solid rgb(255 255 255 / 8%);
     border-radius: 14px;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, .7);
+    box-shadow: 0 24px 80px rgb(0 0 0 / 70%);
     color: #fff;
     overflow: hidden;
     opacity: 0;
@@ -58,7 +58,7 @@
 .mc-subtitle {
     margin-top: 2px;
     font-size: 12px;
-    color: rgba(255, 255, 255, .45);
+    color: rgb(255 255 255 / 45%);
 }
 
 .mc-close {
@@ -70,13 +70,13 @@
     border: none;
     border-radius: 8px;
     background: transparent;
-    color: rgba(255, 255, 255, .5);
+    color: rgb(255 255 255 / 50%);
     cursor: pointer;
     transition: background .15s, color .15s;
 }
 
 .mc-close:hover {
-    background: rgba(255, 255, 255, .08);
+    background: rgb(255 255 255 / 8%);
     color: #fff;
 }
 
@@ -86,8 +86,15 @@
 }
 
 @keyframes mc-view-in {
-    from { opacity: 0; transform: translateY(4px); }
-    to   { opacity: 1; transform: none; }
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
 }
 
 /* ── List ── */
@@ -103,7 +110,7 @@
     align-items: center;
     gap: 14px;
     width: 100%;
-    padding: 12px 12px;
+    padding: 12px;
     border: 1px solid transparent;
     border-radius: 10px;
     background: transparent;
@@ -114,8 +121,8 @@
 }
 
 .mc-item:hover:not(:disabled) {
-    background: rgba(255, 255, 255, .06);
-    border-color: rgba(255, 255, 255, .1);
+    background: rgb(255 255 255 / 6%);
+    border-color: rgb(255 255 255 / 10%);
 }
 
 .mc-item:disabled {
@@ -131,7 +138,7 @@
     width: 36px;
     height: 36px;
     border-radius: 9px;
-    background: rgba(255, 255, 255, .06);
+    background: rgb(255 255 255 / 6%);
     color: #fff;
     transition: background .15s, color .15s;
 }
@@ -153,17 +160,17 @@
 .mc-item-sub {
     font-size: 12px;
     line-height: 1.35;
-    color: rgba(255, 255, 255, .45);
+    color: rgb(255 255 255 / 45%);
 }
 
 /* ── Danger (red only on hover) ── */
 .mc-item.mc-danger:hover:not(:disabled) {
-    background: rgba(237, 66, 69, .1);
-    border-color: rgba(237, 66, 69, .35);
+    background: rgb(237 66 69 / 10%);
+    border-color: rgb(237 66 69 / 35%);
 }
 
 .mc-item.mc-danger:hover:not(:disabled) .mc-item-icon {
-    background: rgba(237, 66, 69, .16);
+    background: rgb(237 66 69 / 16%);
     color: #ff4d4f;
 }
 
@@ -184,9 +191,9 @@
     align-items: flex-start;
     gap: 14px;
     padding: 14px;
-    border: 1px solid rgba(255, 255, 255, .1);
+    border: 1px solid rgb(255 255 255 / 10%);
     border-radius: 10px;
-    background: rgba(255, 255, 255, .03);
+    background: rgb(255 255 255 / 3%);
 }
 
 .mc-confirm-title {
@@ -199,17 +206,17 @@
     margin-top: 4px;
     font-size: 12.5px;
     line-height: 1.5;
-    color: rgba(255, 255, 255, .55);
+    color: rgb(255 255 255 / 55%);
 }
 
 /* nuke confirm card is red from the start */
 .mc-confirm-card.mc-danger-card {
-    border-color: rgba(237, 66, 69, .4);
-    background: rgba(237, 66, 69, .08);
+    border-color: rgb(237 66 69 / 40%);
+    background: rgb(237 66 69 / 8%);
 }
 
 .mc-danger-card .mc-item-icon {
-    background: rgba(237, 66, 69, .16);
+    background: rgb(237 66 69 / 16%);
     color: #ff4d4f;
 }
 
@@ -225,7 +232,7 @@
 
 .mc-type-label {
     font-size: 12px;
-    color: rgba(255, 255, 255, .5);
+    color: rgb(255 255 255 / 50%);
 }
 
 .mc-type-label b {
@@ -237,9 +244,9 @@
     width: 100%;
     box-sizing: border-box;
     padding: 9px 12px;
-    border: 1px solid rgba(255, 255, 255, .12);
+    border: 1px solid rgb(255 255 255 / 12%);
     border-radius: 8px;
-    background: rgba(255, 255, 255, .04);
+    background: rgb(255 255 255 / 4%);
     color: #fff;
     font-size: 13px;
     letter-spacing: .08em;
@@ -248,12 +255,12 @@
 }
 
 .mc-input:focus {
-    border-color: rgba(255, 255, 255, .35);
-    background: rgba(255, 255, 255, .06);
+    border-color: rgb(255 255 255 / 35%);
+    background: rgb(255 255 255 / 6%);
 }
 
 .mc-input::placeholder {
-    color: rgba(255, 255, 255, .2);
+    color: rgb(255 255 255 / 20%);
 }
 
 .mc-confirm-actions {
@@ -273,13 +280,13 @@
 }
 
 .mc-btn-ghost {
-    border: 1px solid rgba(255, 255, 255, .15);
+    border: 1px solid rgb(255 255 255 / 15%);
     background: transparent;
     color: #fff;
 }
 
 .mc-btn-ghost:hover {
-    background: rgba(255, 255, 255, .08);
+    background: rgb(255 255 255 / 8%);
 }
 
 .mc-btn-solid {
@@ -313,15 +320,15 @@
     align-items: center;
     gap: 10px;
     padding: 12px 20px;
-    border-top: 1px solid rgba(255, 255, 255, .07);
-    background: rgba(255, 255, 255, .02);
+    border-top: 1px solid rgb(255 255 255 / 7%);
+    background: rgb(255 255 255 / 2%);
 }
 
 .mc-status-dot {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, .25);
+    background: rgb(255 255 255 / 25%);
     flex-shrink: 0;
     transition: background .3s;
 }
@@ -339,14 +346,14 @@
 .mc-status-text {
     flex: 1;
     font-size: 12px;
-    color: rgba(255, 255, 255, .6);
+    color: rgb(255 255 255 / 60%);
 }
 
 /* ── Buttons (also used by the channel bar) ── */
 .mc-stop-btn {
     padding: 4px 12px;
     border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, .2);
+    border: 1px solid rgb(255 255 255 / 20%);
     background: transparent;
     color: #fff;
     font-size: 12px;
@@ -356,8 +363,8 @@
 }
 
 .mc-stop-btn:hover {
-    background: rgba(237, 66, 69, .15);
-    border-color: rgba(237, 66, 69, .5);
+    background: rgb(237 66 69 / 15%);
+    border-color: rgb(237 66 69 / 50%);
     color: #ff4d4f;
 }
 
@@ -374,7 +381,11 @@
 }
 
 .mc-start-btn:hover    { opacity: .85; }
-.mc-start-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+.mc-start-btn:disabled {
+    opacity: .35;
+    cursor: not-allowed;
+}
 
 /* ── Channel bar (above input) ── */
 .mc-channel-bar {
@@ -383,12 +394,12 @@
     gap: 8px;
     padding: 5px 12px;
     background: #0a0a0a;
-    border-top: 1px solid rgba(255, 255, 255, .08);
+    border-top: 1px solid rgb(255 255 255 / 8%);
 }
 
 .mc-channel-bar-label {
     font-size: 12px;
-    color: rgba(255, 255, 255, .5);
+    color: rgb(255 255 255 / 50%);
     margin-right: 2px;
     white-space: nowrap;
 }

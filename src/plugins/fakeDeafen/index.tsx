@@ -6,13 +6,13 @@
 
 import { definePluginSettings } from "@api/Settings";
 import { openPluginModal } from "@components/settings";
+import { addSettingsPanelButton, DeafenIcon, removeSettingsPanelButton } from "@plugins/philsPluginLibrary";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
 import { ContextMenuApi, FluxDispatcher, Menu } from "@webpack/common";
 import type { MouseEvent } from "react";
-import plugins from "~plugins";
 
-import { addSettingsPanelButton, DeafenIcon, removeSettingsPanelButton } from "@plugins/philsPluginLibrary";
+import plugins from "~plugins";
 
 export let fakeD = false;
 
@@ -162,14 +162,12 @@ function toggleFakeDeafen() {
     fakeD = !fakeD;
     console.log("[FakeDeafen] Toggle state:", fakeD ? "ON" : "OFF");
 
-
     const deafenBtn = document.querySelector('[aria-label="Deafen"]') as HTMLElement;
     if (deafenBtn) {
         deafenBtn.click();
 
         setTimeout(() => deafenBtn.click(), 250);
     }
-
 
     if (fakeD && settings.store.muteUponFakeDeafen) {
         setTimeout(mute, 300);
@@ -255,13 +253,11 @@ export default definePlugin({
             });
         }
 
-
         setupKeybindListener();
     },
 
     stop() {
         removeSettingsPanelButton("faked");
-
 
         if (keydownListener) {
             document.removeEventListener("keydown", keydownListener);

@@ -10,13 +10,14 @@ import { Button } from "@components/Button";
 import { Flex } from "@components/Flex";
 import { Heading } from "@components/Heading";
 import { Paragraph } from "@components/Paragraph";
-import { Text } from "@components/Text";
 import { Devs } from "@utils/constants";
 import { Margins } from "@utils/margins";
-import { closeModal, ModalCloseButton, ModalContent, ModalHeader, ModalRoot, ModalSize, openModal } from "@utils/modal";
 import definePlugin, { IconComponent, OptionType } from "@utils/types";
 import {
+    closeModal,
     ColorPicker,
+    Modal,
+    openModal,
     SearchableSelect,
     Slider
 } from "@webpack/common";
@@ -49,7 +50,8 @@ function clamp(n: number, lo: number, hi: number) {
     return Math.max(lo, Math.min(hi, n));
 }
 
-function onPickColor(color: number) {
+function onPickColor(color: number | null) {
+    if (color == null) return;
     settings.store.caretColor = color;
     applyCSS();
 }
@@ -177,14 +179,16 @@ const settings = definePluginSettings({
         ),
     },
     caretOpacity: {
-        type: OptionType.HIDDEN,
+        type: OptionType.NUMBER,
         description: "Caret opacity (0.25–1)",
         default: 1,
+        hidden: true,
     },
     caretGlow: {
-        type: OptionType.HIDDEN,
+        type: OptionType.NUMBER,
         description: "Soft glow radius (px, 0 = off)",
         default: 0,
+        hidden: true,
     },
     presets: {
         type: OptionType.COMPONENT,
@@ -396,10 +400,7 @@ function SmoothTypeQuickPanel({ close }: { close(): void; }) {
             <Heading tag="h5">Caret color</Heading>
             <ColorPicker
                 color={settings.store.caretColor}
-                onChange={c => {
-                    settings.store.caretColor = c;
-                    applyCSS();
-                }}
+                onChange={onPickColor}
                 showEyeDropper={true}
             />
 
@@ -493,17 +494,9 @@ function SmoothTypeQuickPanel({ close }: { close(): void; }) {
 
 function openSmoothTypeHud() {
     const key = openModal(props => (
-        <ModalRoot {...props} size={ModalSize.MEDIUM}>
-            <ModalHeader>
-                <Text size="lg" weight="semibold" style={{ flexGrow: 1 }}>
-                    SmoothType
-                </Text>
-                <ModalCloseButton onClick={() => closeModal(key)} />
-            </ModalHeader>
-            <ModalContent>
-                <SmoothTypeQuickPanel close={() => closeModal(key)} />
-            </ModalContent>
-        </ModalRoot>
+        <Modal {...props} title="SmoothType" size="md">
+            <SmoothTypeQuickPanel close={() => closeModal(key)} />
+        </Modal>
     ));
 }
 

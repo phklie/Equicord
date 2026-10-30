@@ -65,7 +65,6 @@ export const AudioSourceSelect = (props?: React.ComponentProps<typeof Select>) =
     );
 };
 
-
 // Set default props for AudioSourceSelect
 AudioSourceSelect.defaultProps = {
     options: [],
