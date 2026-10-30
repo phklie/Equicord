@@ -120,14 +120,14 @@
     transition: background .15s ease, border-color .15s ease, color .15s ease;
 }
 
-.mc-item:hover:not(:disabled) {
-    background: rgb(255 255 255 / 6%);
-    border-color: rgb(255 255 255 / 10%);
-}
-
 .mc-item:disabled {
     opacity: .4;
     cursor: not-allowed;
+}
+
+.mc-item:hover:not(:disabled) {
+    background: rgb(255 255 255 / 6%);
+    border-color: rgb(255 255 255 / 10%);
 }
 
 .mc-item-icon {
@@ -161,6 +161,11 @@
     font-size: 12px;
     line-height: 1.35;
     color: rgb(255 255 255 / 45%);
+}
+
+.mc-danger-card .mc-item-icon {
+    background: rgb(237 66 69 / 16%);
+    color: #ff4d4f;
 }
 
 /* ── Danger (red only on hover) ── */
@@ -213,11 +218,6 @@
 .mc-confirm-card.mc-danger-card {
     border-color: rgb(237 66 69 / 40%);
     background: rgb(237 66 69 / 8%);
-}
-
-.mc-danger-card .mc-item-icon {
-    background: rgb(237 66 69 / 16%);
-    color: #ff4d4f;
 }
 
 .mc-danger-card .mc-confirm-title {
@@ -295,13 +295,13 @@
     color: #000;
 }
 
-.mc-btn-solid:hover:not(:disabled) {
-    opacity: .85;
-}
-
 .mc-btn-solid:disabled {
     opacity: .3;
     cursor: not-allowed;
+}
+
+.mc-btn-solid:hover:not(:disabled) {
+    opacity: .85;
 }
 
 .mc-btn-solid.mc-btn-danger {
