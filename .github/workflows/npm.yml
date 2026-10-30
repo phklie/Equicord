@@ -9,7 +9,7 @@ permissions:
 
 jobs:
     npm:
-        if: github.repository == 'Equicord/Equicord'
+        if: github.repository == 'phklie/Equicord'
         runs-on: ubuntu-latest
 
         steps:
