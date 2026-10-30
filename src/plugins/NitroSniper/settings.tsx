@@ -1,7 +1,13 @@
+/*
+ * Vencord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 
 import { definePluginSettings } from "@api/Settings";
+import { Button } from "@components/Button";
 import { OptionType } from "@utils/types";
-import { Button, showToast } from "@webpack/common";
+import { showToast } from "@webpack/common";
 
 import { sendTestWebhook } from "./webhook";
 
@@ -21,10 +27,10 @@ function TestWebhookButton() {
             onClick={() => {
                 void sendTestWebhook(webhookUrl)
                     .then(() => {
-                        showToast("Test webhook sent successfully.", showToast.Type.SUCCESS);
+                        showToast({ text: "Test webhook sent successfully.", variant: "success" });
                     })
-                    .catch((error: unknown) => {
-                        showToast(getToastErrorMessage(error), showToast.Type.FAILURE);
+                    .catch(() => {
+                        showToast({ text: "Error sending test webhook.", variant: "critical" });
                     });
             }}
         >

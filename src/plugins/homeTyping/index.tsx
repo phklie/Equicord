@@ -5,15 +5,16 @@
  */
 
 import { definePluginSettings } from "@api/Settings";
+import { Heading } from "@components/Heading";
+import { Paragraph } from "@components/Paragraph";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
 import { findComponentByCodeLazy, findStoreLazy } from "@webpack";
-import { ColorPicker, Forms, NavigationRouter, Select, SelectedChannelStore, Slider, TypingStore, UserStore, useStateFromStores } from "@webpack/common";
+import { ColorPicker, NavigationRouter, Select, SelectedChannelStore, Slider, TypingStore, UserStore, useStateFromStores } from "@webpack/common";
 
 const ThreeDots = findComponentByCodeLazy("Math.min(1,Math.max(", "dotRadius:");
 
 const PrivateChannelSortStore = findStoreLazy("PrivateChannelSortStore") as { getPrivateChannelIds: () => string[]; };
-
 
 const colorPresets = [
     "#1E1514", "#172019", "#13171B", "#1C1C28", "#402D2D",
@@ -21,7 +22,6 @@ const colorPresets = [
     "#3C2E42", "#422938", "#b6908f", "#bfa088", "#d3c77d",
     "#86ac86", "#88aab3", "#8693b5", "#8a89ba", "#ad94bb",
 ];
-
 
 function relativeLuminance(hexCode: string) {
     const normalize = (x: number) => (
@@ -45,7 +45,6 @@ function getSecondaryTextColor(bgHex: string) {
     return luminance > 0.5 ? "#666666" : "#b9bbbe";
 }
 
-
 function NotificationSettingsComponent() {
     const onPickColor = (color: number) => {
         const hexColor = color.toString(16).padStart(6, "0");
@@ -56,8 +55,8 @@ function NotificationSettingsComponent() {
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "1em" }}>
             <div>
-                <Forms.FormTitle tag="h3">Notification Background Color</Forms.FormTitle>
-                <Forms.FormText style={{ marginBottom: "0.5em" }}>Choose a color for your typing notifications</Forms.FormText>
+                <Heading tag="h3">Notification Background Color</Heading>
+                <Paragraph style={{ marginBottom: "0.5em" }}>Choose a color for your typing notifications</Paragraph>
                 <ColorPicker
                     color={parseInt(settings.store.notificationColor, 16)}
                     onChange={onPickColor}
@@ -67,8 +66,8 @@ function NotificationSettingsComponent() {
             </div>
 
             <div>
-                <Forms.FormTitle tag="h3">Notification Position</Forms.FormTitle>
-                <Forms.FormText style={{ marginBottom: "0.5em" }}>Choose preset position or use custom coordinates below</Forms.FormText>
+                <Heading tag="h3">Notification Position</Heading>
+                <Paragraph style={{ marginBottom: "0.5em" }}>Choose preset position or use custom coordinates below</Paragraph>
                 <Select
                     options={[
                         { label: "Top Right", value: "top-right" },
@@ -89,8 +88,8 @@ function NotificationSettingsComponent() {
             {settings.store.notificationPosition === "custom" && (
                 <>
                     <div>
-                        <Forms.FormTitle tag="h3">Custom Position - X (Horizontal)</Forms.FormTitle>
-                        <Forms.FormText style={{ marginBottom: "0.5em" }}>Distance from left edge (in pixels, 0-2000)</Forms.FormText>
+                        <Heading tag="h3">Custom Position - X (Horizontal)</Heading>
+                        <Paragraph style={{ marginBottom: "0.5em" }}>Distance from left edge (in pixels, 0-2000)</Paragraph>
                         <Slider
                             initialValue={settings.store.customX}
                             onValueChange={(value: number) => {
@@ -106,8 +105,8 @@ function NotificationSettingsComponent() {
                     </div>
 
                     <div>
-                        <Forms.FormTitle tag="h3">Custom Position - Y (Vertical)</Forms.FormTitle>
-                        <Forms.FormText style={{ marginBottom: "0.5em" }}>Distance from top edge (in pixels, 0-1500)</Forms.FormText>
+                        <Heading tag="h3">Custom Position - Y (Vertical)</Heading>
+                        <Paragraph style={{ marginBottom: "0.5em" }}>Distance from top edge (in pixels, 0-1500)</Paragraph>
                         <Slider
                             initialValue={settings.store.customY}
                             onValueChange={(value: number) => {
@@ -125,8 +124,8 @@ function NotificationSettingsComponent() {
             )}
 
             <div>
-                <Forms.FormTitle tag="h3">Notification Size</Forms.FormTitle>
-                <Forms.FormText style={{ marginBottom: "0.5em" }}>Scale the size of notifications (50% - 150%)</Forms.FormText>
+                <Heading tag="h3">Notification Size</Heading>
+                <Paragraph style={{ marginBottom: "0.5em" }}>Scale the size of notifications (50% - 150%)</Paragraph>
                 <Slider
                     initialValue={settings.store.notificationSize}
                     onValueChange={(value: number) => {
@@ -235,7 +234,6 @@ function generateNotificationCSS() {
     const secondaryTextColor = getSecondaryTextColor(bgColor);
     const scale = settings.store.notificationSize / 100;
     const position = settings.store.notificationPosition;
-
 
     let positionCSS = "";
     if (position === "custom") {
@@ -436,7 +434,6 @@ function createNotificationElement(user: TypingUser) {
         notification.style.transition = "opacity 0.2s";
         setTimeout(() => notification.remove(), 200);
 
-
         NavigationRouter.transitionTo(`/channels/@me/${user.channelId}`);
     });
 
@@ -476,14 +473,12 @@ function createNotificationElement(user: TypingUser) {
 function updateNotifications() {
     if (!notificationContainer) return;
 
-
     notificationContainer.className = `vc-typing-notifications-container ${settings.store.notificationPosition}`;
 
     if (!settings.store.showNotifications) {
         notificationContainer.innerHTML = "";
         return;
     }
-
 
     const selectedChannelId = SelectedChannelStore.getChannelId();
 
@@ -495,7 +490,6 @@ function updateNotifications() {
     );
     const newIds = new Set(typingUsers.map(u => u.userId));
 
-
     Array.from(notificationContainer.children).forEach((child: any) => {
         const shouldRemove = !newIds.has(child.dataset.userId) ||
                            child.dataset.channelId === selectedChannelId;
@@ -505,7 +499,6 @@ function updateNotifications() {
             setTimeout(() => child.remove(), 200);
         }
     });
-
 
     typingUsers.forEach(user => {
         if (!existingIds.has(user.userId) && user.channelId !== selectedChannelId) {
@@ -569,9 +562,7 @@ export default definePlugin({
 
         updateNotificationStyles();
 
-
         createContainer();
-
 
         updateInterval = setInterval(updateNotifications, 100);
     },
@@ -583,7 +574,6 @@ export default definePlugin({
         }
 
         removeContainer();
-
 
         const styleElement = document.getElementById("vc-typing-notifications-css");
         if (styleElement) {

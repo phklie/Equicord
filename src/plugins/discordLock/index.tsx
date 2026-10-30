@@ -5,9 +5,10 @@
  */
 
 import { definePluginSettings } from "@api/Settings";
-import definePlugin, { OptionType } from "@utils/types";
+import { Paragraph } from "@components/Paragraph";
 import { Devs } from "@utils/constants";
-import { Forms, IconUtils, React, showToast, UserStore } from "@webpack/common";
+import definePlugin, { OptionType } from "@utils/types";
+import { IconUtils, React, showToast, UserStore } from "@webpack/common";
 
 const OVERLAY_ID = "vcl-overlay";
 
@@ -74,13 +75,13 @@ function PasswordSettingComponent() {
                     transition: "border-color 0.15s ease, background 0.15s ease",
                 }}
             />
-            <Forms.FormText style={{ marginTop: "6px", opacity: mismatch ? 0.9 : 0.6, fontSize: "12px", color: mismatch ? "rgb(242, 63, 66)" : undefined }}>
+            <Paragraph style={{ marginTop: "6px", opacity: mismatch ? 0.9 : 0.6, fontSize: "12px", color: mismatch ? "rgb(242, 63, 66)" : undefined }}>
                 {isNumeric
                     ? mismatch
                         ? `Type ${requiredLen - value.length} more digit${requiredLen - value.length === 1 ? "" : "s"} to complete the PIN.`
                         : `Digits only, up to ${requiredLen} digits.`
                     : "Letters and numbers only."} Leave empty to disable the lock.
-            </Forms.FormText>
+            </Paragraph>
         </>
     );
 }
@@ -201,11 +202,11 @@ function unbindShortcut() {
 
 function lock() {
     if (!settings.store.password) {
-        showToast("Set an unlock password in DiscordLock settings first", showToast.Type.FAILURE);
+        showToast({ text: "Set an unlock password in DiscordLock settings first", variant: "critical" });
         return;
     }
     if (settings.store.passwordType === "numeric" && settings.store.password.length !== getPinLength()) {
-        showToast(`Your password must be exactly ${getPinLength()} digits — check DiscordLock settings`, showToast.Type.FAILURE);
+        showToast({ text: `Your password must be exactly ${getPinLength()} digits — check DiscordLock settings`, variant: "critical" });
         return;
     }
     unbindActivity();

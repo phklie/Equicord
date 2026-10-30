@@ -19,6 +19,8 @@
 import { Button } from "@components/Button";
 import { Card } from "@components/Card";
 import { Flex } from "@components/Flex";
+import { Heading } from "@components/Heading";
+import { Paragraph } from "@components/Paragraph";
 import { Switch } from "@components/Switch";
 import { MicrophoneSettingsModal } from "@plugins/betterMicrophone.desktop/components";
 import { PluginInfo } from "@plugins/betterScreenshare.desktop/constants";
@@ -39,7 +41,7 @@ import {
 import { Styles } from "@plugins/philsPluginLibrary/styles";
 import { ModalSize, openModalLazy } from "@utils/modal";
 import { SelectOption } from "@vencord/discord-types";
-import { Forms, React, Select, Slider, TextInput, useEffect, useState } from "@webpack/common";
+import { React, Select, Slider, TextInput, useEffect, useState } from "@webpack/common";
 
 const simpleResolutions: readonly (SelectOption & { value: types.Resolution; })[] = [
     {
@@ -132,7 +134,6 @@ export const ScreenshareSettingsModal = (props: ScreenshareSettingsModalProps) =
         getCurrentProfile,
         getProfiles
     } = screenshareStore.use();
-
 
     const {
         name,
@@ -411,8 +412,8 @@ export const ScreenshareSettingsModal = (props: ScreenshareSettingsModalProps) =
 
     const guideCard =
         <Card style={{ ...Styles.infoCard, flex: 0.4 }}>
-            <Forms.FormTitle tag="h5">How to use?</Forms.FormTitle>
-            <Forms.FormText>If you want to know more about the settings or possible issues, please read <a onClick={() => openURL(PluginInfo.README + "#better-screenshare-plugin")}>this</a>.</Forms.FormText>
+            <Heading tag="h5">How to use?</Heading>
+            <Paragraph>If you want to know more about the settings or possible issues, please read <a onClick={() => openURL(PluginInfo.README + "#better-screenshare-plugin")}>this</a>.</Paragraph>
         </Card>;
 
     const settingsCardProfiles =
@@ -420,10 +421,9 @@ export const ScreenshareSettingsModal = (props: ScreenshareSettingsModalProps) =
 
     const simpleToggle =
         <Flex style={{ justifyContent: "center", alignItems: "center", gap: "0.6em" }}>
-            <Forms.FormTitle style={{ margin: 0 }} tag="h5">Simple</Forms.FormTitle>
+            <Heading style={{ margin: 0 }} tag="h5">Simple</Heading>
             <Switch checked={simpleMode ?? false} disabled={isSaving} onChange={checked => setSimpleMode(checked)} />
         </Flex>;
-
 
     return (
         <SettingsModal

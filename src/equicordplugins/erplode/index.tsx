@@ -21,6 +21,7 @@ import "./styles.css";
 
 import { definePluginSettings } from "@api/Settings";
 import { BaseText } from "@components/BaseText";
+import { Button } from "@components/Button";
 import { Divider } from "@components/Divider";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Flex } from "@components/Flex";
@@ -34,7 +35,7 @@ import { useAwaiter } from "@utils/react";
 import definePlugin, { OptionType } from "@utils/types";
 import { User, UserProfile } from "@vencord/discord-types";
 import { findComponentByCodeLazy } from "@webpack";
-import { Button, ColorPicker, Forms, React, UserProfileStore, UserStore, useState } from "@webpack/common";
+import { ColorPicker, React, UserProfileStore, UserStore, useState } from "@webpack/common";
 import virtualMerge from "virtual-merge";
 
 interface Colors {
@@ -135,7 +136,7 @@ function SettingsAboutComponent() {
                 <Divider
                     className={classes(Margins.top8, Margins.bottom8)}
                 />
-                <Forms.FormTitle tag="h3">Color pickers</Forms.FormTitle>
+                <HeadingSecondary>Color pickers</HeadingSecondary>
                 <Flex gap="1em">
                     <ColorPicker
                         color={color1}
@@ -170,8 +171,8 @@ function SettingsAboutComponent() {
                             const colorString = encode(color1, color2);
                             copyWithToast(colorString);
                         }}
-                        color={Button.Colors.PRIMARY}
-                        size={Button.Sizes.XLARGE}
+                        variant="primary"
+                        size="medium"
                         style={{ marginBottom: "auto" }}
                     >
                         Copy 3y3
@@ -242,10 +243,11 @@ export default definePlugin({
                 const colorString = encode(primary, accent);
                 copyWithToast(colorString);
             }}
-            color={Button.Colors.PRIMARY}
-            size={Button.Sizes.XLARGE}
+            variant="primary"
+            size="medium"
             className={Margins.left16}
-        >Copy 3y3
-        </Button >;
+        >
+            Copy 3y3
+        </Button>;
     }, { noop: true }),
 });
