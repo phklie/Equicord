@@ -9,7 +9,7 @@ import { Logger } from "@utils/Logger";
 import definePlugin from "@utils/types";
 import { Message } from "@vencord/discord-types";
 import { findByPropsLazy } from "@webpack";
-import { UserStore } from "@webpack/common";
+import { ChannelStore, UserStore } from "@webpack/common";
 
 import { resolveGiftType } from "./giftCode";
 import { settings } from "./settings";
@@ -19,7 +19,7 @@ import { sendClaimWebhook } from "./webhook";
 const GIFT_LINK_REGEX = /(?:discord\.gift\/|discord\.com\/gifts?\/)([a-zA-Z0-9]{16,24})/;
 
 const logger = new Logger("NitroSniper");
-const GiftActions = findByPropsLazy("redeemGiftCode", "fetchGiftCode");
+const GiftActions = findByPropsLazy("redeemGiftCode");
 
 let startTime = 0;
 let claiming = false;
@@ -59,16 +59,17 @@ function createClaimRequest(message: Message): ClaimRequest | null {
     const authorAvatar = message.author?.avatar;
 
     return {
-        code,
-        authorId,
-        authorName: message.author?.globalName ?? message.author?.username,
-        authorUsername: message.author?.username,
-        authorAvatarUrl: authorId && authorAvatar
-            ? `https://cdn.discordapp.com/avatars/${authorId}/${authorAvatar}.png?size=128`
-            : undefined,
-        channelId: message.channel_id,
-        guildId: message.guild_id,
-        messageId: message.id
+    code,
+    authorId,
+    authorName: message.author?.globalName ?? message.author?.username,
+    authorUsername: message.author?.username,
+    authorAvatarUrl: authorId && authorAvatar
+        ? `https://cdn.discordapp.com/avatars/${authorId}/${authorAvatar}.png?size=128`
+        : undefined,
+    channelId: message.channel_id,
+    guildId: ChannelStore.getChannel(message.channel_id)?.guild_id,
+    messageId: message.id
+
     };
 }
 
