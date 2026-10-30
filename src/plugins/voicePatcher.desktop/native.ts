@@ -1,0 +1,392 @@
+/*
+ * Vencord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+import { DATA_DIR } from "@main/utils/constants";
+import { downloadToFile, fetchJson } from "@main/utils/http";
+import { VENCORD_USER_AGENT } from "@shared/vencordUserAgent";
+import { IpcMainInvokeEvent } from "electron";
+import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join, resolve } from "path";
+
+const PRELOAD_WORLD_ID = 999;
+const PATCHER_RELEASE_API = "https://api.github.com/repos/secnssnify/DiscordVoicePatcher/releases/latest";
+const PATCHER_CACHE_DIR = join(DATA_DIR, "plugins", "VoicePatcher");
+const PATCHER_CACHE_LEGACY_NODE_PATH = join(PATCHER_CACHE_DIR, "patcher.node");
+const PATCHER_CACHE_LEGACY_INI_PATH = join(PATCHER_CACHE_DIR, "patcher.ini");
+const PATCHER_CACHE_META_PATH = join(PATCHER_CACHE_DIR, "release.json");
+
+type ResolvedAssets = {
+    patcherPath: string;
+    iniPath: string;
+    source: string;
+};
+
+type GitHubReleaseAsset = {
+    id: number;
+    name: string;
+    browser_download_url: string;
+};
+
+type GitHubRelease = {
+    tag_name: string;
+    assets: GitHubReleaseAsset[];
+};
+
+type CachedReleaseMeta = {
+    tagName: string;
+    patcherAssetId: number;
+    iniAssetId: number;
+};
+
+let downloadedAssetsPromise: Promise<ResolvedAssets | null> | null = null;
+
+function getGitHubHeaders() {
+    return {
+        Accept: "application/vnd.github+json",
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+        "User-Agent": VENCORD_USER_AGENT,
+    };
+}
+
+function loadCachedReleaseMeta(): CachedReleaseMeta | null {
+    if (!existsSync(PATCHER_CACHE_META_PATH)) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(readFileSync(PATCHER_CACHE_META_PATH, "utf8")) as CachedReleaseMeta;
+    } catch {
+        return null;
+    }
+}
+
+function writeCachedReleaseMeta(meta: CachedReleaseMeta) {
+    writeFileSync(PATCHER_CACHE_META_PATH, JSON.stringify(meta, null, 2));
+}
+
+function pickReleaseAsset(assets: GitHubReleaseAsset[], fileName: string) {
+    return assets.find(asset => asset.name.toLowerCase() === fileName.toLowerCase()) ?? null;
+}
+
+async function downloadAssetToPath(url: string, targetPath: string) {
+    const tempPath = `${targetPath}.download`;
+
+    try {
+        await downloadToFile(url, tempPath, {
+            headers: getGitHubHeaders(),
+        });
+
+        if (existsSync(targetPath)) {
+            unlinkSync(targetPath);
+        }
+
+        renameSync(tempPath, targetPath);
+    } finally {
+        if (existsSync(tempPath)) {
+            unlinkSync(tempPath);
+        }
+    }
+}
+
+function getVersionedCachePaths(patcherAssetId: number, iniAssetId: number) {
+    return {
+        patcherPath: join(PATCHER_CACHE_DIR, `patcher-${patcherAssetId}.node`),
+        iniPath: join(PATCHER_CACHE_DIR, `patcher-${iniAssetId}.ini`),
+    };
+}
+
+function resolveCachedAssets(): ResolvedAssets | null {
+    const cachedMeta = loadCachedReleaseMeta();
+
+    if (cachedMeta) {
+        const versionedPaths = getVersionedCachePaths(cachedMeta.patcherAssetId, cachedMeta.iniAssetId);
+        if (existsSync(versionedPaths.patcherPath) && existsSync(versionedPaths.iniPath)) {
+            return {
+                ...versionedPaths,
+                source: `cached DiscordVoicePatcher release ${cachedMeta.tagName}`,
+            };
+        }
+    }
+
+    // Backward compatibility with caches created before release-versioned filenames.
+    if (existsSync(PATCHER_CACHE_LEGACY_NODE_PATH) && existsSync(PATCHER_CACHE_LEGACY_INI_PATH)) {
+        return {
+            patcherPath: PATCHER_CACHE_LEGACY_NODE_PATH,
+            iniPath: PATCHER_CACHE_LEGACY_INI_PATH,
+            source: cachedMeta?.tagName
+                ? `cached DiscordVoicePatcher release ${cachedMeta.tagName}`
+                : "cached DiscordVoicePatcher assets",
+        };
+    }
+
+    return null;
+}
+
+async function resolveDownloadedAssetsOnce(): Promise<ResolvedAssets | null> {
+    mkdirSync(PATCHER_CACHE_DIR, { recursive: true });
+    const cachedFallback = resolveCachedAssets();
+
+    try {
+        // Cache-bust the latest-release lookup. Native addons are also stored under
+        // release-asset-specific filenames so Node's require cache cannot retain an
+        // older patcher.node after a new release is published.
+        const release = await fetchJson<GitHubRelease>(`${PATCHER_RELEASE_API}?t=${Date.now()}`, {
+            headers: getGitHubHeaders(),
+        });
+
+        const patcherAsset = pickReleaseAsset(release.assets ?? [], "patcher.node");
+        const iniAsset = pickReleaseAsset(release.assets ?? [], "patcher.ini");
+
+        if (!patcherAsset || !iniAsset) {
+            throw new Error("Latest DiscordVoicePatcher release does not contain both patcher.node and patcher.ini assets");
+        }
+
+        const versionedPaths = getVersionedCachePaths(patcherAsset.id, iniAsset.id);
+
+        if (!existsSync(versionedPaths.patcherPath)) {
+            await downloadAssetToPath(patcherAsset.browser_download_url, versionedPaths.patcherPath);
+        }
+        if (!existsSync(versionedPaths.iniPath)) {
+            await downloadAssetToPath(iniAsset.browser_download_url, versionedPaths.iniPath);
+        }
+
+        writeCachedReleaseMeta({
+            tagName: release.tag_name,
+            patcherAssetId: patcherAsset.id,
+            iniAssetId: iniAsset.id,
+        });
+
+        return {
+            ...versionedPaths,
+            source: `DiscordVoicePatcher release ${release.tag_name}`,
+        };
+    } catch (error) {
+        console.warn("[VoicePatcher] Failed to refresh DiscordVoicePatcher release assets; using cache if available:", error);
+        return cachedFallback;
+    }
+}
+
+async function resolveDownloadedAssets(): Promise<ResolvedAssets | null> {
+    // Deduplicate concurrent callers only. Do not memoize forever: every later Apply,
+    // Revert, or settings refresh should be able to discover a newly published release.
+    downloadedAssetsPromise ??= resolveDownloadedAssetsOnce();
+
+    try {
+        return await downloadedAssetsPromise;
+    } finally {
+        downloadedAssetsPromise = null;
+    }
+}
+
+function resolveLocalPluginAssets(): ResolvedAssets | null {
+    const repoRoot = resolve(__dirname, "..");
+    const candidates = [
+        join(repoRoot, "src", "plugins", "voicePatcher.desktop"),
+        join(repoRoot, "src", "userplugins", "voicePatcher.desktop"),
+    ];
+
+    for (const pluginDir of candidates) {
+        if (existsSync(join(pluginDir, "patcher.node")) && existsSync(join(pluginDir, "patcher.ini"))) {
+            return {
+                patcherPath: join(pluginDir, "patcher.node"),
+                iniPath: join(pluginDir, "patcher.ini"),
+                source: "source tree VoicePatcher assets",
+            };
+        }
+    }
+
+    return null;
+}
+
+async function resolvePluginAssets(): Promise<ResolvedAssets> {
+    const downloadedAssets = await resolveDownloadedAssets();
+    if (downloadedAssets) {
+        return downloadedAssets;
+    }
+
+    const localAssets = resolveLocalPluginAssets();
+    if (localAssets) {
+        return localAssets;
+    }
+
+    throw new Error("Could not locate or download VoicePatcher assets");
+}
+
+function inspectVoicePatcherIni(iniPath: string) {
+    const ini = readFileSync(iniPath, "utf8");
+    const sectionNames = [] as string[];
+
+    for (const rawBlock of ini.split(/\r?\n(?=\[)/)) {
+        const nameMatch = rawBlock.match(/^\[(.+?)\]/m);
+        if (!nameMatch) continue;
+
+        sectionNames.push(nameMatch[1]);
+    }
+
+    return {
+        iniPath,
+        iniSectionCount: sectionNames.length,
+        iniSectionNames: sectionNames,
+    };
+}
+
+function isolatedRequireBootstrap(patcherPath: string) {
+    return `
+        const requireFn =
+            typeof globalThis.require === "function"
+                ? globalThis.require
+                : typeof globalThis.module?.require === "function"
+                    ? globalThis.module.require.bind(globalThis.module)
+                    : (() => {
+                        const moduleBuiltin = globalThis.process?.getBuiltinModule?.("module")
+                            ?? globalThis.process?.getBuiltinModule?.("node:module");
+
+                        if (!moduleBuiltin?.createRequire) {
+                            throw new Error("No require function available in isolated world");
+                        }
+
+                        return moduleBuiltin.createRequire(${JSON.stringify(patcherPath)});
+                    })();
+
+        const patcher = requireFn(${JSON.stringify(patcherPath)});
+    `;
+}
+
+export async function getOriginalIniPatches(event: IpcMainInvokeEvent) {
+    const { iniPath } = await resolvePluginAssets();
+    const ini = readFileSync(iniPath, "utf8");
+    const patches: { name: string; content: string; }[] = [];
+    for (const rawBlock of ini.split(/\r?\n(?=\[)/)) {
+        if (!rawBlock.trim()) continue;
+        const nameMatch = rawBlock.match(/^\[(.+?)\]/m);
+        if (nameMatch) {
+            patches.push({ name: nameMatch[1], content: rawBlock.trim() });
+        }
+    }
+    return patches;
+}
+
+export async function revertPatches(event: IpcMainInvokeEvent) {
+    const { patcherPath, source } = await resolvePluginAssets();
+
+    const result = await event.sender.executeJavaScriptInIsolatedWorld(PRELOAD_WORLD_ID, [{
+        code: `(() => {
+            try {
+                ${isolatedRequireBootstrap(patcherPath)}
+
+                if (typeof patcher.revertPatches !== "function") {
+                    return {
+                        error: "Loaded patcher.node does not support runtime reversion. Publish and load the updated DiscordVoicePatcher release first."
+                    };
+                }
+
+                return patcher.revertPatches();
+            } catch (error) {
+                return {
+                    error: error instanceof Error
+                        ? \`\${error.name}: \${error.message}\`
+                        : String(error)
+                };
+            }
+        })();`
+    }]);
+
+    if (result == null) {
+        throw new Error("VoicePatcher isolated-world execution returned no result");
+    }
+
+    return {
+        assetSource: source,
+        ...result,
+    };
+}
+
+export async function applyPatches(event: IpcMainInvokeEvent, disabledPatchesInfo: string, customPatchesInfo: string) {
+    const { patcherPath, iniPath, source } = await resolvePluginAssets();
+
+    const disabledPatches = disabledPatchesInfo ? JSON.parse(disabledPatchesInfo) : [];
+    const customPatches = customPatchesInfo ? JSON.parse(customPatchesInfo) : [];
+
+    const originalIni = readFileSync(iniPath, "utf8");
+    let customIni = "";
+
+    for (const rawBlock of originalIni.split(/\r?\n(?=\[)/)) {
+        if (!rawBlock.trim()) continue;
+        const nameMatch = rawBlock.match(/^\[(.+?)\]/m);
+        if (!nameMatch) {
+            customIni += rawBlock + "\n\n";
+            continue;
+        }
+        if (!disabledPatches.includes(nameMatch[1])) {
+            customIni += rawBlock + "\n\n";
+        }
+    }
+
+    for (const cp of customPatches) {
+        if (cp.enabled) {
+            customIni += "\n" + cp.content + "\n";
+        }
+    }
+
+    const tempIniPath = join(
+        tmpdir(),
+        `custom_voice_patcher_${process.pid}_${Date.now()}_${Math.random().toString(16).slice(2)}.ini`
+    );
+    writeFileSync(tempIniPath, customIni);
+
+    try {
+        const result = await event.sender.executeJavaScriptInIsolatedWorld(PRELOAD_WORLD_ID, [{
+            code: `(() => {
+                try {
+                    ${isolatedRequireBootstrap(patcherPath)}
+
+                    let revertBeforeApply = null;
+                    if (typeof patcher.revertPatches === "function") {
+                        revertBeforeApply = patcher.revertPatches();
+
+                        if (revertBeforeApply?.error || (revertBeforeApply?.failed ?? 0) > 0) {
+                            return {
+                                error: "Could not safely revert all currently tracked VoicePatcher writes before applying the new configuration.",
+                                revert_before_apply: revertBeforeApply
+                            };
+                        }
+                    }
+
+                    if (typeof patcher.applyPatches !== "function") {
+                        throw new Error("Loaded patcher.node does not export applyPatches");
+                    }
+
+                    return {
+                        ...patcher.applyPatches(${JSON.stringify(tempIniPath)}),
+                        revert_before_apply: revertBeforeApply
+                    };
+                } catch (error) {
+                    return {
+                        error: error instanceof Error
+                            ? \`\${error.name}: \${error.message}\`
+                            : String(error)
+                    };
+                }
+            })();`
+        }]);
+
+        if (result == null) {
+            throw new Error("VoicePatcher isolated-world execution returned no result");
+        }
+
+        const inspectData = inspectVoicePatcherIni(tempIniPath);
+
+        return {
+            ...inspectData,
+            assetSource: source,
+            ...result,
+        };
+    } finally {
+        try { unlinkSync(tempIniPath); } catch {}
+    }
+}
