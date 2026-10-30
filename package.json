@@ -57,6 +57,7 @@
         "monaco-editor": "catalog:",
         "nanoid": "catalog:",
         "native-file-system-adapter": "catalog:",
+        "virtual-merge": "1.0.1",
         "yaml-js": "catalog:"
     },
     "devDependencies": {
