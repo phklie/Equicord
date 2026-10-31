@@ -19,7 +19,6 @@
 import { Card } from "@components/Card";
 import { Flex } from "@components/Flex";
 import { Heading } from "@components/Heading";
-import { Paragraph } from "@components/Paragraph";
 import { Switch } from "@components/Switch";
 import { MicrophoneProfile, MicrophoneStore } from "@plugins/betterMicrophone.desktop/stores";
 import {
@@ -32,7 +31,6 @@ import {
     validateNumberInput,
     validateTextInputNumber
 } from "@plugins/philsPluginLibrary";
-import { Styles } from "@plugins/philsPluginLibrary/styles";
 import { ModalSize } from "@utils/modal";
 import { SelectOption } from "@vencord/discord-types";
 import { Select, Slider, TextInput, useEffect, useState } from "@webpack/common";
@@ -66,6 +64,29 @@ const containerStyle: React.CSSProperties = {
     minWidth: 0,
     boxSizing: "border-box"
 };
+
+const WarningBox = ({ children }: { children: React.ReactNode; }) => (
+    <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "0.8em",
+        width: "100%",
+        minWidth: 0,
+        boxSizing: "border-box",
+        padding: "0.8em 1em",
+        borderRadius: "8px",
+        border: "1px solid rgb(144 210 255 / 60%)",
+        background: "rgb(0 135 255 / 5%)",
+        color: "var(--text-default, var(--text-normal, #fff))",
+        fontSize: "14px",
+        lineHeight: 1.4
+    }}>
+        <svg width="24" height="24" viewBox="0 0 24 24" style={{ flexShrink: 0 }} aria-hidden="true">
+            <path fill="#7bbbff" fillOpacity={0.85} fillRule="evenodd" clipRule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM10 6.9a2 2 0 0 1 4 0l-.7 6.4a1.3 1.3 0 0 1-2.6 0ZM12 15.8a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2Z" />
+        </svg>
+        <div>{children}</div>
+    </div>
+);
 
 export interface MicrophoneSettingsModalProps extends React.ComponentProps<typeof SettingsModal> {
     microphoneStore: ProfilableStore<MicrophoneStore, MicrophoneProfile>;
@@ -289,11 +310,10 @@ export const MicrophoneSettingsModal = (props: MicrophoneSettingsModalProps) => 
             profileableStore={microphoneStore} />;
 
     const infoCard =
-        <Card style={{ ...Styles.infoCard, boxSizing: "border-box", width: "100%", minWidth: 0 }}>
-            <Heading tag="h5">Important</Heading>
-            <Paragraph>
+        <Card style={{ padding: "1em", boxSizing: "border-box", width: "100%", minWidth: 0 }}>
+            <WarningBox>
                 To take full advantage of this plugin, please disable <span style={{ fontWeight: "bold" }}>Krisp</span> and <span style={{ fontWeight: "bold" }}>Echo Cancellation</span>, otherwise features like Stereo (Channels) will not work.
-            </Paragraph>
+            </WarningBox>
         </Card>;
 
     return (
