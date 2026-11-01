@@ -94,8 +94,14 @@ interface DonorBadge {
     "2"?: 1;
 }
 
+interface SpecialBadge {
+    tooltip?: string;
+    badge: string;
+}
+
 let DonorBadges = {} as Record<string, Array<DonorBadge>>;
 let EquicordDonorBadges = {} as Record<string, Array<Record<"tooltip" | "badge", string>>>;
+let SpecialBadges = {} as Record<string, SpecialBadge>;
 let DirectoryBadges = {} as Record<string, DirectoryBadge>;
 
 async function loadBadges(url: string, noCache = false) {
@@ -111,6 +117,7 @@ async function loadAllBadges(noCache = false) {
 
     DonorBadges = vencordBadges;
     EquicordDonorBadges = equicordBadges;
+    SpecialBadges = vencordBadges.special ?? {};
 }
 
 let intervalId: any;
@@ -227,6 +234,10 @@ export default definePlugin({
         return EquicordDonorBadges;
     },
 
+    get SpecialBadges() {
+        return SpecialBadges;
+    },
+
     toolboxActions: {
         async "Refetch Badges"() {
             await loadAllBadges(true);
@@ -295,8 +306,26 @@ export default definePlugin({
         return handlers;
     },
 
+    getSpecialBadges(userId: string) {
+        const special = SpecialBadges[userId];
+        if (!special?.badge) return [];
+
+        return [{
+            id: "vencord_special_badge",
+            iconSrc: special.badge,
+            description: special.tooltip,
+            name: special.tooltip,
+            infoLabel: "",
+            rarity: BadgeRarity.MYTHIC,
+            position: BadgePosition.START,
+            onContextMenu(event, badge) {
+                ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
+            }
+        } satisfies ProfileBadge];
+    },
+
     getDonorBadges(userId: string) {
-        return DonorBadges[userId]?.map((badge, idx) => {
+        const donor = DonorBadges[userId]?.map((badge, idx) => {
             let largeIconSrc: string | undefined = undefined;
             if (badge["2"]) {
                 const url = new URL(badge.badge);
@@ -327,6 +356,11 @@ export default definePlugin({
                 },
             } satisfies ProfileBadge;
         });
+
+        const special = this.getSpecialBadges(userId);
+
+        if (!donor && !special.length) return undefined;
+        return [...(donor ?? []), ...special];
     },
 
     getEquicordDonorBadges(userId: string) {

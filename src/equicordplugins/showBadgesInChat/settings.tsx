@@ -58,6 +58,18 @@ const settings = definePluginSettings({
         hidden: true,
         default: 5
     },
+    showSpecial: {
+        type: OptionType.BOOLEAN,
+        description: "Enable to show Special badges in chat.",
+        hidden: true,
+        default: true
+    },
+    SpecialPosition: {
+        type: OptionType.NUMBER,
+        description: "The position of the Special badges.",
+        hidden: true,
+        default: 2
+    },
     showDiscordProfile: {
         type: OptionType.BOOLEAN,
         description: "Enable to show Discord profile badges in chat.",
@@ -97,6 +109,7 @@ const BadgeSettings = () => {
         { src: "https://equicord.org/assets/favicon.png", shown: settings.store.showEquicordContributor, title: "Equicord contributor badge", key: "EquicordContributer", position: settings.store.EquicordContributorPosition },
         { src: "https://cdn.discordapp.com/emojis/1026533070955872337.png", shown: settings.store.showVencordDonor, title: "Vencord donor badges", key: "VencordDonor", position: settings.store.VencordDonorPosition },
         { src: "https://cdn.discordapp.com/emojis/1092089799109775453.png", shown: settings.store.showVencordContributor, title: "Vencord contributor badge", key: "VencordContributer", position: settings.store.VencordContributorPosition },
+        { src: "https://badges.vencord.dev/badges/282846706180161537/b83b999323f4633eb84c4aacec20c9f640f9214b.webp", shown: settings.store.showSpecial, title: "Special badges", key: "Special", position: settings.store.SpecialPosition },
         { src: "https://cdn.discordapp.com/badge-icons/bf01d1073931f921909045f3a39fd264.png", shown: settings.store.showDiscordProfile, title: "Discord profile badges (HypeSquad, Discord Staff, Early Supporter, etc.)", key: "DiscordProfile", position: settings.store.DiscordProfilePosition },
         { src: "https://cdn.discordapp.com/badge-icons/2ba85e8026a8614b640c2837bcdfe21b.png", shown: settings.store.showDiscordNitro, title: "Nitro badge", key: "DiscordNitro", position: settings.store.DiscordNitroPosition }
     ]);
@@ -119,6 +132,10 @@ const BadgeSettings = () => {
                 case "VencordContributer":
                     settings.store.VencordContributorPosition = image.position;
                     settings.store.showVencordContributor = image.shown;
+                    break;
+                case "Special":
+                    settings.store.SpecialPosition = image.position;
+                    settings.store.showSpecial = image.shown;
                     break;
                 case "DiscordProfile":
                     settings.store.DiscordProfilePosition = image.position;
