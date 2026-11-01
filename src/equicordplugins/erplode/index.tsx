@@ -25,7 +25,7 @@ import { Button } from "@components/Button";
 import { Divider } from "@components/Divider";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Flex } from "@components/Flex";
-import { HeadingSecondary } from "@components/Heading";
+import { Heading } from "@components/Heading";
 import { Paragraph } from "@components/Paragraph";
 import { Devs } from "@utils/constants";
 import { copyWithToast, fetchUserProfile } from "@utils/discord";
@@ -121,7 +121,7 @@ function SettingsAboutComponent() {
 
     return (
         <section>
-            <HeadingSecondary>Usage</HeadingSecondary>
+            <Heading>Usage</Heading>
             <Paragraph>
                 After enabling this plugin, you will see custom colors in
                 the profiles of other people using compatible plugins.{" "}
@@ -136,7 +136,7 @@ function SettingsAboutComponent() {
                 <Divider
                     className={classes(Margins.top8, Margins.bottom8)}
                 />
-                <HeadingSecondary>Color pickers</HeadingSecondary>
+                <Heading>Color pickers</Heading>
                 <Flex gap="1em">
                     <ColorPicker
                         color={color1}
@@ -181,7 +181,7 @@ function SettingsAboutComponent() {
                 <Divider
                     className={classes(Margins.top8, Margins.bottom8)}
                 />
-                <HeadingSecondary>Preview</HeadingSecondary>
+                <Heading>Preview</Heading>
                 <div className="vc-fpt-preview">
                     <ProfileModal
                         user={UserStore.getCurrentUser()}
