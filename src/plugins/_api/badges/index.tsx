@@ -33,18 +33,6 @@ import Plugins, { PluginMeta } from "~plugins";
 
 import { EquicordDonorModal, EquicordTranslatorModal, VencordDonorModal } from "./modals";
 
-type SpecialBadgeData = {
-    tooltip: string;
-    badge: string;
-};
-
-type BadgesData = Record<
-    string,
-    Array<Record<"tooltip" | "badge", string>>
-> & {
-    special?: Record<string, SpecialBadgeData | SpecialBadgeData[]>;
-};
-
 const ContributorBadge: ProfileBadge = {
     id: "vencord_contributor_badge",
     description: "Vencord Contributor",
@@ -100,7 +88,13 @@ const UserPluginContributorBadge: ProfileBadge = {
     },
 };
 
-let DonorBadges = {} as BadgesData;
+interface DonorBadge {
+    tooltip?: string;
+    badge: string;
+    "2"?: 1;
+}
+
+let DonorBadges = {} as Record<string, Array<DonorBadge>>;
 let EquicordDonorBadges = {} as Record<string, Array<Record<"tooltip" | "badge", string>>>;
 let DirectoryBadges = {} as Record<string, DirectoryBadge>;
 
@@ -257,29 +251,7 @@ export default definePlugin({
         if (!profile) return [];
 
         try {
-            const badges = _getBadges(profile);
-
-            const special: SpecialBadgeData | SpecialBadgeData[] | undefined =
-                (DonorBadges as any).special?.[profile.userId];
-            const specialList = !special ? [] : Array.isArray(special) ? special : [special];
-
-            specialList.forEach((specialBadge, idx) => {
-                if (!specialBadge?.badge) return;
-                badges.push({
-                    id: `vc_special_badge_${profile.userId}_${idx}`,
-                    iconSrc: specialBadge.badge,
-                    description: specialBadge.tooltip,
-                    name: specialBadge.tooltip,
-                    infoLabel: "",
-                    rarity: BadgeRarity.MYTHIC,
-                    position: BadgePosition.START,
-                    onContextMenu(event, badge) {
-                        ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
-                    }
-                });
-            });
-
-            return badges;
+            return _getBadges(profile);
         } catch (e) {
             new Logger("BadgeAPI#getBadges").error(e);
             return [];
@@ -324,27 +296,37 @@ export default definePlugin({
     },
 
     getDonorBadges(userId: string) {
-        return DonorBadges[userId]?.map((badge, idx) => ({
-            id: `vencord_donor_badge_${idx}`,
-            iconSrc: badge.badge,
-            description: badge.tooltip,
-            name: badge.tooltip,
-            infoLabel: "Vencord Donor",
-            rarity: BadgeRarity.MYTHIC,
-            position: BadgePosition.START,
-            props: {
-                style: {
-                    borderRadius: "50%",
-                    transform: "scale(0.9)" // The image is a bit too big compared to default badges
-                }
-            },
-            onContextMenu(event, badge) {
-                ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
-            },
-            onClick() {
-                return VencordDonorModal();
-            },
-        } satisfies ProfileBadge));
+        return DonorBadges[userId]?.map((badge, idx) => {
+            let largeIconSrc: string | undefined = undefined;
+            if (badge["2"]) {
+                const url = new URL(badge.badge);
+                url.pathname = url.pathname.replace(/(\.[^/.]+)$/, "@2x$1");
+                largeIconSrc = url.toString();
+            }
+
+            return {
+                id: `vencord_donor_badge_${idx}`,
+                iconSrc: badge.badge,
+                largeIconSrc,
+                description: badge.tooltip,
+                name: badge.tooltip,
+                infoLabel: "Vencord Donor",
+                rarity: BadgeRarity.MYTHIC,
+                position: BadgePosition.START,
+                props: {
+                    style: {
+                        borderRadius: "50%",
+                        transform: "scale(0.9)" // The image is a bit too big compared to default badges
+                    }
+                },
+                onContextMenu(event, badge) {
+                    ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
+                },
+                onClick() {
+                    return VencordDonorModal();
+                },
+            } satisfies ProfileBadge;
+        });
     },
 
     getEquicordDonorBadges(userId: string) {
