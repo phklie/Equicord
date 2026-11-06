@@ -579,8 +579,11 @@ export default definePlugin({
             find: '"SET_IMAGE_ZOOM_RATIO"',
             replacement: [
                 {
-                    match: /(?<=\i\.\i\((\i),)\{\},\{default:/,
-                    replace: "{default:()=>$self.wrapEditor($1.Editor)},{Editor:"
+                    // Canary: i.d(t,{},{default:...}) | Stable: i.d(t,{default:()=>Editor})
+                    match: /(?<=\i\.\i\((\i),)\{\},\{default:|(?<=\i\.\i\(\i,\{default:\(\)=>)(\i)(?=\}\))/,
+                    replace: (_, exportsObj, editor) => editor
+                        ? `$self.wrapEditor(${editor})`
+                        : `{default:()=>$self.wrapEditor(${exportsObj}.Editor)},{Editor:`
                 },
                 {
                     match: /(?<=#{intl::AVATAR_UPLOAD_EDIT_MEDIA}\),)size:"md",actionBarInput:/,

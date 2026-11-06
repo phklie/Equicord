@@ -38,12 +38,12 @@ export default definePlugin({
                 [
                     {
                         match: /(?<=BUTTON_HOME.{0,10}children:)(\(0,\i.jsxs?\)\(\i,{}\))/,
-                        replace: "arguments[0].user == null ? null : (vcIsTyping ? $self.TypingIcon() : $1)"
+                        replace: "arguments[0].user == null ? null : (eqIsTyping ? $self.TypingIcon() : $1)"
                     },
                     // define isTyping earlier in the function so i dont bReAk ThE rUlEs Of HoOkS
                     {
                         match: /if\(null==\i\)return null;/,
-                        replace: "let vcIsTyping = $self.isTyping();$&"
+                        replace: "let eqIsTyping = $self.isTyping();$&"
                     }
                 ],
             group: true
